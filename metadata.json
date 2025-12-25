@@ -1,0 +1,5 @@
+{
+  "name": "Invoicify AI",
+  "description": "A smart invoice generator with client preloading and AI-powered item parsing.",
+  "requestFramePermissions": []
+}
