@@ -80,6 +80,13 @@ const App: React.FC = () => {
     setInvoiceData(prev => ({ ...prev, client: newClient }));
   };
 
+  const handleUpdateClient = (updatedClient: Client) => {
+    setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
+    if (invoiceData.client && invoiceData.client.id === updatedClient.id) {
+      setInvoiceData(prev => ({ ...prev, client: updatedClient }));
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -127,6 +134,7 @@ const App: React.FC = () => {
                 onSelectClient={(client) => setInvoiceData(prev => ({ ...prev, client }))} 
                 clients={clients}
                 onAddClient={handleAddClient}
+                onUpdateClient={handleUpdateClient}
               />
             </section>
 

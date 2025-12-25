@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Client } from '../types';
-import { Search, X, User, Plus, Save } from 'lucide-react';
+import { Search, X, User, Plus, Save, Edit } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface ClientSelectorProps {
@@ -8,14 +8,21 @@ interface ClientSelectorProps {
   onSelectClient: (client: Client | null) => void;
   clients: Client[];
   onAddClient: (client: Client) => void;
+  onUpdateClient: (client: Client) => void;
 }
 
-const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelectClient, clients, onAddClient }) => {
+const ClientSelector: React.FC<ClientSelectorProps> = ({ 
+  selectedClient, 
+  onSelectClient, 
+  clients, 
+  onAddClient,
+  onUpdateClient 
+}) => {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // New Client Modal State
+  // New/Edit Client Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newClient, setNewClient] = useState<Partial<Client>>({});
 
@@ -50,22 +57,35 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
     setIsModalOpen(true);
   };
 
-  const handleSaveNewClient = () => {
+  const handleEditClient = () => {
+    if (selectedClient) {
+      setNewClient({ ...selectedClient });
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleSaveClient = () => {
     if (!newClient.name || !newClient.address) {
         alert("Name and Address are required");
         return;
     }
 
-    const clientToAdd: Client = {
-        id: uuidv4(),
-        name: newClient.name,
-        address: newClient.address,
-        email: newClient.email || '',
-        gstin: newClient.gstin,
-        vatId: newClient.vatId
-    };
+    if (newClient.id) {
+        // Update existing client
+        onUpdateClient(newClient as Client);
+    } else {
+        // Create new client
+        const clientToAdd: Client = {
+            id: uuidv4(),
+            name: newClient.name,
+            address: newClient.address,
+            email: newClient.email || '',
+            gstin: newClient.gstin,
+            vatId: newClient.vatId
+        };
+        onAddClient(clientToAdd);
+    }
 
-    onAddClient(clientToAdd);
     setIsModalOpen(false);
     setQuery('');
     setNewClient({});
@@ -74,10 +94,18 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
   if (selectedClient) {
     return (
       <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm relative group">
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-2 right-2 flex space-x-1">
+           <button 
+             onClick={handleEditClient}
+             className="text-slate-400 hover:text-blue-500 transition-colors p-1"
+             title="Edit Client"
+           >
+             <Edit size={16} />
+           </button>
            <button 
              onClick={handleClear}
              className="text-slate-400 hover:text-red-500 transition-colors p-1"
+             title="Remove Client"
            >
              <X size={16} />
            </button>
@@ -150,12 +178,12 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
         </div>
       )}
 
-      {/* CREATE CLIENT MODAL */}
+      {/* CREATE/EDIT CLIENT MODAL */}
       {isModalOpen && (
          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                    <h3 className="font-bold text-slate-800">Add New Client</h3>
+                    <h3 className="font-bold text-slate-800">{newClient.id ? 'Edit Client' : 'Add New Client'}</h3>
                     <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                         <X size={20} />
                     </button>
@@ -208,11 +236,11 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
                         Cancel
                     </button>
                     <button 
-                        onClick={handleSaveNewClient}
+                        onClick={handleSaveClient}
                         className="px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors flex items-center space-x-2"
                     >
                         <Save size={16} />
-                        <span>Save Client</span>
+                        <span>{newClient.id ? 'Update Client' : 'Save Client'}</span>
                     </button>
                 </div>
             </div>

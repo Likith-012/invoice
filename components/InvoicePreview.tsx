@@ -84,7 +84,9 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ data }) => {
         <div className="flex justify-between items-start mb-8 gap-8">
            {/* BILL TO */}
            <div className="flex-1">
-              <h3 className="font-bold text-slate-900 uppercase text-sm mb-2">BILL TO:</h3>
+              <h3 className="font-bold text-slate-900 uppercase text-sm mb-2">
+                 {isQuotation ? 'QUOTATION TO:' : 'BILL TO:'}
+              </h3>
               {data.client ? (
                 <div className="text-sm text-slate-800 leading-snug space-y-1">
                    <p className="font-semibold">{data.client.name}</p>
@@ -120,8 +122,9 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ data }) => {
              {/* Header */}
              <div className="bg-[#0e3a5d] text-white flex text-sm font-bold py-2.5 px-4 uppercase tracking-wider">
                 <div className="w-[10%]">ITEM</div>
-                <div className="w-[65%]">DESCRIPTION</div>
-                <div className="w-[25%] text-right">AMOUNT</div>
+                <div className="w-[50%]">DESCRIPTION</div>
+                <div className="w-[20%] text-right">{isQuotation ? 'RATE' : 'COST'}</div>
+                <div className="w-[20%] text-right">AMOUNT</div>
              </div>
 
              {/* Rows */}
@@ -129,8 +132,11 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ data }) => {
                {data.items.map((item, index) => (
                   <div key={item.id} className="flex text-sm text-slate-800 py-4 px-4">
                      <div className="w-[10%] font-medium">{index + 1}.</div>
-                     <div className="w-[65%] font-medium">{item.description}</div>
-                     <div className="w-[25%] text-right font-bold">{currencyFormatter.format(item.quantity * item.unitPrice).replace('₹', '₹')}</div>
+                     <div className="w-[50%] font-medium">{item.description}</div>
+                     <div className="w-[20%] text-right font-medium">
+                        {isQuotation ? `${currencyFormatter.format(item.unitPrice).replace('₹', '₹')} / V` : currencyFormatter.format(item.unitPrice).replace('₹', '₹')}
+                     </div>
+                     <div className="w-[20%] text-right font-bold">{currencyFormatter.format(item.quantity * item.unitPrice).replace('₹', '₹')}</div>
                   </div>
                ))}
              </div>
@@ -141,18 +147,28 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ data }) => {
         <div className="mt-auto relative z-10 pb-20">
            <div className="flex justify-between items-start">
               
-              {/* Payment Info */}
-              <div className="w-[55%] text-sm text-slate-900">
-                 <h3 className="font-bold text-slate-900 uppercase mb-2">PAYMENT INFORMATION:</h3>
-                 <div className="space-y-1 font-semibold text-slate-800">
-                    <div className="flex"><span className="w-24">Name:</span> <span>{data.sender.accountName}</span></div>
-                    <div className="flex"><span className="w-24">Account:</span> <span>{data.sender.accountNumber}</span></div>
-                    <div className="flex"><span className="w-24">PAN:</span> <span>{data.sender.pan}</span></div>
-                    <div className="flex"><span className="w-24">Branch:</span> <span>{data.sender.branch}</span></div>
-                    <div className="flex"><span className="w-24">IFS code:</span> <span>{data.sender.ifsCode}</span></div>
-                    <div className="flex"><span className="w-24">Mobile No:</span> <span>{data.sender.mobile}</span></div>
+              {/* Payment Info / Terms */}
+              {isQuotation ? (
+                 <div className="w-[55%] text-sm text-slate-900">
+                     <h3 className="font-bold text-slate-900 uppercase mb-2">Terms & Conditions</h3>
+                     <div className="space-y-1 font-medium text-slate-800 text-sm">
+                        <p>1. 50% Advance</p>
+                        <p>2. 50% Post Completion of work</p>
+                     </div>
                  </div>
-              </div>
+              ) : (
+                 <div className="w-[55%] text-sm text-slate-900">
+                    <h3 className="font-bold text-slate-900 uppercase mb-2">PAYMENT INFORMATION:</h3>
+                    <div className="space-y-1 font-semibold text-slate-800">
+                        <div className="flex"><span className="w-24">Name:</span> <span>{data.sender.accountName}</span></div>
+                        <div className="flex"><span className="w-24">Account:</span> <span>{data.sender.accountNumber}</span></div>
+                        <div className="flex"><span className="w-24">PAN:</span> <span>{data.sender.pan}</span></div>
+                        <div className="flex"><span className="w-24">Branch:</span> <span>{data.sender.branch}</span></div>
+                        <div className="flex"><span className="w-24">IFS code:</span> <span>{data.sender.ifsCode}</span></div>
+                        <div className="flex"><span className="w-24">Mobile No:</span> <span>{data.sender.mobile}</span></div>
+                    </div>
+                 </div>
+              )}
 
               {/* Totals */}
               <div className="w-[40%]">
