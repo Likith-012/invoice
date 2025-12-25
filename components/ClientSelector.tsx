@@ -91,89 +91,89 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
     setNewClient({});
   };
 
-  if (selectedClient) {
-    return (
-      <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm relative group">
-        <div className="absolute top-2 right-2 flex space-x-1">
-           <button 
-             onClick={handleEditClient}
-             className="text-slate-400 hover:text-blue-500 transition-colors p-1"
-             title="Edit Client"
-           >
-             <Edit size={16} />
-           </button>
-           <button 
-             onClick={handleClear}
-             className="text-slate-400 hover:text-red-500 transition-colors p-1"
-             title="Remove Client"
-           >
-             <X size={16} />
-           </button>
-        </div>
-        <div className="flex items-start space-x-3">
-          <div className="bg-blue-100 p-2 rounded-full text-blue-600">
-             <User size={20} />
-          </div>
-          <div>
-            <h3 className="font-semibold text-slate-800">{selectedClient.name}</h3>
-            <p className="text-sm text-slate-500 whitespace-pre-line">{selectedClient.address}</p>
-            <p className="text-sm text-slate-400 mt-1">{selectedClient.email}</p>
-            {(selectedClient.gstin || selectedClient.vatId) && (
-              <p className="text-xs text-slate-400 mt-1">
-                {selectedClient.gstin ? `GSTIN: ${selectedClient.gstin}` : `VAT: ${selectedClient.vatId}`}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div ref={containerRef} className="relative">
-      <div className="relative">
-        <input
-          type="text"
-          className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-          placeholder="Search or add client..."
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setIsOpen(true);
-          }}
-          onFocus={() => setIsOpen(true)}
-        />
-        <Search className="absolute left-3 top-3.5 text-slate-400" size={18} />
-      </div>
+    <div className="relative">
+      {selectedClient ? (
+        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm relative group">
+          <div className="absolute top-2 right-2 flex space-x-1 z-10">
+             <button 
+               onClick={handleEditClient}
+               className="text-slate-400 hover:text-blue-500 transition-colors p-1"
+               title="Edit Client"
+             >
+               <Edit size={16} />
+             </button>
+             <button 
+               onClick={handleClear}
+               className="text-slate-400 hover:text-red-500 transition-colors p-1"
+               title="Remove Client"
+             >
+               <X size={16} />
+             </button>
+          </div>
+          <div className="flex items-start space-x-3">
+            <div className="bg-blue-100 p-2 rounded-full text-blue-600">
+               <User size={20} />
+            </div>
+            <div>
+              <h3 className="font-semibold text-slate-800">{selectedClient.name}</h3>
+              <p className="text-sm text-slate-500 whitespace-pre-line">{selectedClient.address}</p>
+              <p className="text-sm text-slate-400 mt-1">{selectedClient.email}</p>
+              {(selectedClient.gstin || selectedClient.vatId) && (
+                <p className="text-xs text-slate-400 mt-1">
+                  {selectedClient.gstin ? `GSTIN: ${selectedClient.gstin}` : `VAT: ${selectedClient.vatId}`}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div ref={containerRef} className="relative">
+          <div className="relative">
+            <input
+              type="text"
+              className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              placeholder="Search or add client..."
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setIsOpen(true);
+              }}
+              onFocus={() => setIsOpen(true)}
+            />
+            <Search className="absolute left-3 top-3.5 text-slate-400" size={18} />
+          </div>
 
-      {isOpen && query.length > 0 && (
-        <div className="absolute z-20 w-full mt-2 bg-white rounded-lg shadow-xl border border-slate-100 max-h-60 overflow-y-auto">
-          {filteredClients.length > 0 ? (
-            filteredClients.map(client => (
-              <button
-                key={client.id}
-                onClick={() => handleSelect(client)}
-                className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors flex items-center space-x-3"
-              >
-                 <div className="bg-slate-100 p-2 rounded-full text-slate-500">
-                   <User size={16} />
+          {isOpen && query.length > 0 && (
+            <div className="absolute z-20 w-full mt-2 bg-white rounded-lg shadow-xl border border-slate-100 max-h-60 overflow-y-auto">
+              {filteredClients.length > 0 ? (
+                filteredClients.map(client => (
+                  <button
+                    key={client.id}
+                    onClick={() => handleSelect(client)}
+                    className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors flex items-center space-x-3"
+                  >
+                     <div className="bg-slate-100 p-2 rounded-full text-slate-500">
+                       <User size={16} />
+                     </div>
+                     <div>
+                       <div className="font-medium text-slate-700">{client.name}</div>
+                       <div className="text-xs text-slate-500 truncate">{client.email}</div>
+                     </div>
+                  </button>
+                ))
+              ) : (
+                 <div className="p-2">
+                     <button 
+                        onClick={handleOpenCreateModal}
+                        className="w-full flex items-center justify-center space-x-2 text-blue-600 bg-blue-50 hover:bg-blue-100 p-3 rounded-md transition-colors font-medium text-sm"
+                     >
+                        <Plus size={16} />
+                        <span>Create new client "{query}"</span>
+                     </button>
                  </div>
-                 <div>
-                   <div className="font-medium text-slate-700">{client.name}</div>
-                   <div className="text-xs text-slate-500 truncate">{client.email}</div>
-                 </div>
-              </button>
-            ))
-          ) : (
-             <div className="p-2">
-                 <button 
-                    onClick={handleOpenCreateModal}
-                    className="w-full flex items-center justify-center space-x-2 text-blue-600 bg-blue-50 hover:bg-blue-100 p-3 rounded-md transition-colors font-medium text-sm"
-                 >
-                    <Plus size={16} />
-                    <span>Create new client "{query}"</span>
-                 </button>
-             </div>
+              )}
+            </div>
           )}
         </div>
       )}

@@ -61,21 +61,31 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ data }) => {
           </div>
           
           {/* Logo */}
-          <div className="flex items-center gap-3 mt-2">
-             <div className="relative w-10 h-10">
-                {/* Abstract Triangle Icon */}
-                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M50 10 L90 80 H10 L50 10Z" fill="#fbbf24" rx="10" stroke="#fbbf24" strokeWidth="8" strokeLinejoin="round" />
-                  <circle cx="25" cy="80" r="12" fill="#fbbf24" />
-                  <circle cx="75" cy="80" r="12" fill="#fbbf24" />
-                  <circle cx="50" cy="25" r="12" fill="#fbbf24" />
-                </svg>
-             </div>
-             <div className="flex flex-col">
-                <span className="text-2xl font-extrabold text-slate-900 leading-none">ADVERSITY</span>
-                <div className="flex justify-between w-full">
-                  <span className="text-[10px] tracking-[0.3em] uppercase text-slate-500 font-medium">SOLUTIONS</span>
-                </div>
+          <div className="mt-2">
+             <img 
+               src="/logo.png" 
+               alt="Adversity Solutions" 
+               className="h-16 object-contain"
+               onError={(e) => {
+                 // Fallback to text if image fails to load
+                 e.currentTarget.style.display = 'none';
+                 const fallback = document.getElementById('logo-fallback');
+                 if (fallback) fallback.classList.remove('hidden');
+               }}
+             />
+             {/* Fallback Logo (Hidden by default unless image fails) */}
+             <div id="logo-fallback" className="hidden flex items-center gap-3">
+               <div className="relative w-10 h-10">
+                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50 10 L90 80 H10 L50 10Z" fill="#fbbf24" rx="10" stroke="#fbbf24" strokeWidth="8" strokeLinejoin="round" />
+                    <circle cx="25" cy="80" r="12" fill="#fbbf24" />
+                    <circle cx="75" cy="80" r="12" fill="#fbbf24" />
+                    <circle cx="50" cy="25" r="12" fill="#fbbf24" />
+                  </svg>
+               </div>
+               <div className="flex flex-col">
+                  <span className="text-2xl font-extrabold text-slate-900 leading-none">ADVERSITY</span>
+               </div>
              </div>
           </div>
         </div>
