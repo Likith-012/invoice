@@ -18,10 +18,14 @@ const SmartInput: React.FC<SmartInputProps> = ({ onItemsParsed }) => {
     setError(null);
     try {
       const items = await parseInvoiceItemsFromText(input);
-      onItemsParsed(items);
-      setInput('');
+      if (items.length === 0) {
+        setError("Could not extract items. Please try describing them differently.");
+      } else {
+        onItemsParsed(items);
+        setInput('');
+      }
     } catch (err) {
-      setError("Failed to parse. Please check your API key or try again.");
+      setError("AI service unavailable. Please enter items manually.");
     } finally {
       setLoading(false);
     }

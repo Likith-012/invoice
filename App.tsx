@@ -9,7 +9,7 @@ import {
 import ClientSelector from './components/ClientSelector';
 import InvoicePreview from './components/InvoicePreview';
 import SmartInput from './components/SmartInput';
-import { Plus, Trash2, Printer, AlertCircle, Eye, Edit, ArrowLeft, FileText } from 'lucide-react';
+import { Plus, Trash2, Printer, Eye, Edit, ArrowLeft, FileText } from 'lucide-react';
 
 const App: React.FC = () => {
   // Load clients from local storage or use mocks
@@ -275,12 +275,6 @@ const App: React.FC = () => {
 
              {/* Action Buttons */}
              <div className="pointer-events-auto flex space-x-3">
-                {!process.env.API_KEY && (
-                   <div className="hidden lg:flex items-center bg-amber-100 text-amber-800 px-3 py-1.5 rounded-full text-xs border border-amber-200 shadow-sm">
-                     <AlertCircle size={14} className="mr-2" />
-                     AI unavailable
-                   </div>
-                )}
                 <button 
                   onClick={handlePrint}
                   className="bg-slate-900 text-white px-5 py-2.5 rounded-full shadow-lg hover:bg-slate-800 hover:shadow-xl transition-all flex items-center space-x-2 font-medium active:scale-95"
