@@ -23,6 +23,8 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ data }) => {
     text: '#1f2937', // Slate 800
   };
 
+  const isQuotation = data.type === 'quotation';
+
   return (
     <div className="bg-white shadow-2xl min-h-[1123px] w-[794px] mx-auto print-full-width relative flex flex-col font-sans text-slate-900 overflow-hidden">
       
@@ -49,9 +51,11 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ data }) => {
         {/* --- HEADER CONTENT --- */}
         <div className="flex justify-between items-start mb-10">
           <div>
-            <h1 className="text-4xl font-serif text-black mb-2 tracking-wide">INVOICE</h1>
+            <h1 className="text-4xl font-serif text-black mb-2 tracking-wide uppercase">
+              {isQuotation ? 'QUOTATION' : 'INVOICE'}
+            </h1>
             <div className="text-sm text-slate-700 font-medium leading-relaxed">
-              <p>Invoice Number: {data.invoiceNumber}</p>
+              <p>{isQuotation ? 'Quotation' : 'Invoice'} Number: {data.invoiceNumber}</p>
               <p>Date: {new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}</p>
             </div>
           </div>

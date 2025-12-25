@@ -27,6 +27,7 @@ export interface LineItem {
 }
 
 export interface InvoiceData {
+  type: 'invoice' | 'quotation';
   invoiceNumber: string;
   date: string;
   dueDate: string; // Not in screenshot explicitly but good to keep in data structure
