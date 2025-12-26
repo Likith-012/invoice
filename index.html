@@ -15,11 +15,28 @@
         font-family: 'Inter', sans-serif;
       }
       @media print {
-        @page { margin: 0; }
-        body { margin: 0; }
+        @page { 
+          size: A4; 
+          margin: 0; 
+        }
+        html, body { 
+          margin: 0; 
+          padding: 0;
+          width: 210mm;
+          height: 297mm;
+        }
         .no-print { display: none !important; }
         .print-only { display: block !important; }
-        .print-full-width { width: 100% !important; max-width: none !important; }
+        /* Ensure specific print classes override standard styles */
+        .print-exact-a4 {
+           width: 210mm !important;
+           height: 297mm !important; 
+           overflow: hidden !important; /* Prevents tiny spills creating a 2nd page */
+           box-shadow: none !important;
+           margin: 0 !important;
+           page-break-after: avoid !important;
+           page-break-inside: avoid !important;
+        }
       }
     </style>
   <script type="importmap">

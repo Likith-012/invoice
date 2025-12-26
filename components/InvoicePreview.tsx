@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { InvoiceData } from '../types';
 
 interface InvoicePreviewProps {
@@ -8,6 +8,9 @@ interface InvoicePreviewProps {
 const InvoicePreview: React.FC<InvoicePreviewProps> = ({ data }) => {
   const subtotal = data.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
   const total = subtotal;
+  
+  // Use a stable timestamp for cache busting this session
+  const [timestamp] = useState(Date.now());
 
   const currencyFormatter = new Intl.NumberFormat('en-IN', {
     style: 'currency',
@@ -26,7 +29,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ data }) => {
   const isQuotation = data.type === 'quotation';
 
   return (
-    <div className="bg-white shadow-2xl min-h-[1123px] w-[794px] mx-auto print-full-width relative flex flex-col font-sans text-slate-900 overflow-hidden">
+    <div className="bg-white shadow-2xl w-[210mm] min-h-[297mm] mx-auto relative flex flex-col font-sans text-slate-900 overflow-hidden print-exact-a4">
       
       {/* --- TOP WAVES SVG --- */}
       <div className="absolute top-0 left-0 right-0 h-40 z-0 pointer-events-none">
@@ -63,17 +66,18 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ data }) => {
           {/* Logo */}
           <div className="mt-2">
              <img 
-               src="/logo.png" 
+               src={`/logo.png?t=${timestamp}`}
                alt="Adversity Solutions" 
-               className="h-16 object-contain"
+               className="h-24 w-auto object-contain"
                onError={(e) => {
-                 // Fallback to text if image fails to load
+                 // If the PNG fails, hide the img and show the fallback div
                  e.currentTarget.style.display = 'none';
                  const fallback = document.getElementById('logo-fallback');
                  if (fallback) fallback.classList.remove('hidden');
                }}
              />
-             {/* Fallback Logo (Hidden by default unless image fails) */}
+             
+             {/* Fallback Logo (Hidden unless img fails) */}
              <div id="logo-fallback" className="hidden flex items-center gap-3">
                <div className="relative w-10 h-10">
                   <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
