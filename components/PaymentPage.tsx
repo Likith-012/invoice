@@ -37,7 +37,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onPaymentSuccess }) => {
           
           <div className="relative z-10">
             <h2 className="text-2xl font-bold mb-2">Invoicify Premium</h2>
-            <p className="text-slate-400">Lifetime Access</p>
+            <p className="text-slate-400">Monthly Subscription</p>
             
             <div className="mt-12">
               <div className="flex items-end gap-2">
@@ -59,10 +59,6 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onPaymentSuccess }) => {
               <li className="flex items-center gap-3">
                 <div className="bg-white/10 p-1 rounded-full"><Check size={14} /></div>
                 <span className="text-slate-300">AI-Powered Magic Input</span>
-              </li>
-              <li className="flex items-center gap-3">
-                <div className="bg-white/10 p-1 rounded-full"><Check size={14} /></div>
-                <span className="text-slate-300">No Monthly Fees</span>
               </li>
             </ul>
           </div>

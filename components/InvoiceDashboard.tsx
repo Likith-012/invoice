@@ -74,6 +74,12 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
     return localStorage.getItem('invoicify_watermark') === 'true';
   });
 
+  // Load Watermark Opacity
+  const [watermarkOpacity, setWatermarkOpacity] = useState<number>(() => {
+    const saved = localStorage.getItem('invoicify_watermark_opacity');
+    return saved ? parseInt(saved, 10) : 10;
+  });
+
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     type: 'invoice',
     invoiceNumber: `${invoicePrefix}00125`,
@@ -125,6 +131,10 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
   useEffect(() => {
     localStorage.setItem('invoicify_watermark', String(showWatermark));
   }, [showWatermark]);
+
+  useEffect(() => {
+    localStorage.setItem('invoicify_watermark_opacity', String(watermarkOpacity));
+  }, [watermarkOpacity]);
 
   const addItem = () => {
     const newItem: LineItem = {
@@ -236,6 +246,8 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
         onUpdateCustomThemeDetails={handleUpdateThemeDetails}
         customWatermark={customWatermark}
         onUpdateCustomWatermark={setCustomWatermark}
+        watermarkOpacity={watermarkOpacity}
+        onUpdateWatermarkOpacity={setWatermarkOpacity}
       />
 
       {/* SCREEN LAYOUT (Hidden during print) */}
@@ -482,6 +494,7 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
                   showWatermark={showWatermark}
                   customThemes={customThemes}
                   customWatermark={customWatermark}
+                  watermarkOpacity={watermarkOpacity}
                 />
              </div>
           </div>
@@ -499,6 +512,7 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
           showWatermark={showWatermark}
           customThemes={customThemes}
           customWatermark={customWatermark}
+          watermarkOpacity={watermarkOpacity}
         />
       </div>
     </>

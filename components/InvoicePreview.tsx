@@ -8,6 +8,7 @@ interface InvoicePreviewProps {
   showWatermark?: boolean;
   customThemes?: InvoiceTheme[];
   customWatermark?: string;
+  watermarkOpacity?: number;
 }
 
 const InvoicePreview: React.FC<InvoicePreviewProps> = ({ 
@@ -16,7 +17,8 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   templateId = 'classic-blue',
   showWatermark = false,
   customThemes = [],
-  customWatermark
+  customWatermark,
+  watermarkOpacity = 10
 }) => {
   const [timestamp] = useState(Date.now());
   
@@ -76,7 +78,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     const watermarkSrc = customWatermark || logoSrc;
     
     return (
-       <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.05] z-0 overflow-hidden">
+       <div 
+         className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden" 
+         style={{ opacity: watermarkOpacity / 100 }}
+       >
          {watermarkSrc ? (
             <img src={watermarkSrc} className="w-3/4 max-w-[500px] grayscale object-contain" alt="Watermark" />
          ) : (

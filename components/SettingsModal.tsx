@@ -24,6 +24,8 @@ interface SettingsModalProps {
   onUpdateCustomThemeDetails?: (theme: InvoiceTheme) => void; // New prop for updating existing themes
   customWatermark?: string;
   onUpdateCustomWatermark?: (base64: string) => void;
+  watermarkOpacity?: number;
+  onUpdateWatermarkOpacity?: (opacity: number) => void;
 }
 
 type Tab = 'company' | 'payment' | 'preferences' | 'clients' | 'templates';
@@ -48,7 +50,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onDeleteTheme,
   onUpdateCustomThemeDetails,
   customWatermark,
-  onUpdateCustomWatermark
+  onUpdateCustomWatermark,
+  watermarkOpacity = 10,
+  onUpdateWatermarkOpacity
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('company');
   const [localSender, setLocalSender] = useState<SenderDetails>(senderDetails);
@@ -521,44 +525,62 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                           
                           {/* Custom Watermark Upload */}
                           {showWatermark && (
-                            <div className="ml-12 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                                <label className="block text-xs font-medium text-slate-500 mb-2">Custom Watermark Image (Optional)</label>
-                                <div className="flex items-center gap-4">
-                                    <div 
-                                        className="w-16 h-16 border border-dashed border-slate-300 rounded flex items-center justify-center bg-white cursor-pointer hover:border-blue-400"
-                                        onClick={() => watermarkInputRef.current?.click()}
-                                    >
-                                        {customWatermark ? (
-                                            <img src={customWatermark} className="w-full h-full object-contain p-1" />
-                                        ) : (
-                                            <Upload size={16} className="text-slate-400" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1">
-                                        <input 
-                                            type="file" 
-                                            ref={watermarkInputRef} 
-                                            className="hidden" 
-                                            accept="image/png,image/jpeg"
-                                            onChange={(e) => handleFileChange(e, (base64) => onUpdateCustomWatermark && onUpdateCustomWatermark(base64))}
-                                        />
-                                        <button 
-                                            onClick={() => watermarkInputRef.current?.click()}
-                                            className="text-xs text-blue-600 hover:underline block mb-1"
-                                        >
-                                            Upload Image
-                                        </button>
-                                        {customWatermark && (
-                                            <button 
-                                                onClick={() => onUpdateCustomWatermark && onUpdateCustomWatermark('')}
-                                                className="text-xs text-red-500 hover:underline"
-                                            >
-                                                Remove Custom Watermark
-                                            </button>
-                                        )}
-                                    </div>
+                            <div className="ml-12 space-y-4">
+                                {/* Opacity Slider */}
+                                <div className="bg-slate-50 p-3 border border-slate-200 rounded-lg">
+                                     <div className="flex justify-between text-xs font-medium text-slate-500 mb-2">
+                                         <span>Watermark Opacity</span>
+                                         <span>{watermarkOpacity}%</span>
+                                     </div>
+                                     <input
+                                         type="range"
+                                         min="1"
+                                         max="100"
+                                         value={watermarkOpacity}
+                                         onChange={(e) => onUpdateWatermarkOpacity && onUpdateWatermarkOpacity(Number(e.target.value))}
+                                         className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                     />
                                 </div>
-                                <p className="text-[10px] text-slate-400 mt-2">Overrides your logo for the watermark.</p>
+                                
+                                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                                    <label className="block text-xs font-medium text-slate-500 mb-2">Custom Watermark Image (Optional)</label>
+                                    <div className="flex items-center gap-4">
+                                        <div 
+                                            className="w-16 h-16 border border-dashed border-slate-300 rounded flex items-center justify-center bg-white cursor-pointer hover:border-blue-400"
+                                            onClick={() => watermarkInputRef.current?.click()}
+                                        >
+                                            {customWatermark ? (
+                                                <img src={customWatermark} className="w-full h-full object-contain p-1" />
+                                            ) : (
+                                                <Upload size={16} className="text-slate-400" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <input 
+                                                type="file" 
+                                                ref={watermarkInputRef} 
+                                                className="hidden" 
+                                                accept="image/png,image/jpeg"
+                                                onChange={(e) => handleFileChange(e, (base64) => onUpdateCustomWatermark && onUpdateCustomWatermark(base64))}
+                                            />
+                                            <button 
+                                                onClick={() => watermarkInputRef.current?.click()}
+                                                className="text-xs text-blue-600 hover:underline block mb-1"
+                                            >
+                                                Upload Image
+                                            </button>
+                                            {customWatermark && (
+                                                <button 
+                                                    onClick={() => onUpdateCustomWatermark && onUpdateCustomWatermark('')}
+                                                    className="text-xs text-red-500 hover:underline"
+                                                >
+                                                    Remove Custom Watermark
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 mt-2">Overrides your logo for the watermark.</p>
+                                </div>
                             </div>
                           )}
                       </div>
