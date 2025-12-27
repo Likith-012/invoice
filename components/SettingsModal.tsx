@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { SenderDetails, Client, InvoiceTheme, DEFAULT_THEMES } from '../types';
-import { X, Upload, Save, Trash2, User, CreditCard, Building, Settings as SettingsIcon, LayoutTemplate, Droplets, Plus, Palette, FileJson, Image as ImageIcon, Download, Sliders } from 'lucide-react';
+import { X, Upload, Save, Trash2, User, CreditCard, Building, Settings as SettingsIcon, LayoutTemplate, Droplets, Plus, Palette, FileJson, Image as ImageIcon, Download, Sliders, Copy } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface SettingsModalProps {
@@ -123,6 +123,32 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     onUpdateTemplate(themeToSave.id);
   };
 
+  const handleCloneTheme = () => {
+    if (!onAddTheme) return;
+    // Find standard theme to clone
+    const standardTheme = DEFAULT_THEMES[templateId];
+    if (!standardTheme) return;
+
+    const clonedTheme: InvoiceTheme = {
+      ...JSON.parse(JSON.stringify(standardTheme)),
+      id: `custom-${uuidv4()}`,
+      name: `${standardTheme.name} (Custom)`,
+      isCustom: true,
+      customConfig: {
+        ...standardTheme.customConfig,
+        // Initialize defaults if they don't exist
+        logoScale: 100,
+        logoX: 0,
+        logoY: 0,
+        watermarkScale: 100,
+        watermarkX: 0,
+        watermarkY: 0
+      }
+    };
+    onAddTheme(clonedTheme);
+    onUpdateTemplate(clonedTheme.id);
+  };
+
   const handleImportTheme = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && onAddTheme) {
@@ -167,7 +193,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 marginBottom: 0,
                 backgroundScale: 100,
                 backgroundPositionX: 50,
-                backgroundPositionY: 50
+                backgroundPositionY: 50,
+                logoScale: 100,
+                logoX: 0,
+                logoY: 0,
+                watermarkScale: 100,
+                watermarkX: 0,
+                watermarkY: 0
             }
         };
         onAddTheme(themeToSave);
@@ -266,7 +298,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 
                 {/* Logo Upload */}
                 <div className="w-full sm:w-1/3">
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Company Logo (PNG)</label>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Company Logo (PNG/JPG)</label>
                   <div 
                     className="border-2 border-dashed border-slate-300 rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors h-40 text-center relative overflow-hidden"
                     onClick={() => fileInputRef.current?.click()}
@@ -276,7 +308,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     ) : (
                       <Upload className="text-slate-300 mb-2 z-10" size={32} />
                     )}
-                    <span className="text-xs text-slate-500 z-10">{logo ? 'Click to change' : 'Upload PNG Logo'}</span>
+                    <span className="text-xs text-slate-500 z-10">{logo ? 'Click to change' : 'Upload Logo'}</span>
                     <input 
                       type="file" 
                       ref={fileInputRef} 
@@ -435,6 +467,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                            </button>
                       </div>
 
+                      {/* Customize Standard Theme Call to Action */}
+                      {!activeCustomTheme && (
+                        <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
+                            <div>
+                                <h4 className="text-sm font-bold text-slate-800">Customize this template</h4>
+                                <p className="text-xs text-slate-500">Edit positions, colors, and save as your own.</p>
+                            </div>
+                            <button 
+                                onClick={handleCloneTheme}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-sm font-medium hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-sm"
+                            >
+                                <Copy size={14} /> Duplicate & Edit
+                            </button>
+                        </div>
+                      )}
+
                       {/* Adjust Active Custom Template */}
                       {activeCustomTheme && (
                         <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
@@ -442,82 +490,168 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                              <Sliders size={16} className="text-blue-600"/>
                              Adjust Selected Template
                            </h4>
-                           <div className="space-y-4">
+                           <div className="space-y-4 h-[250px] overflow-y-auto pr-2">
+                             
+                             {/* Background Controls */}
                              <div>
-                               <div className="flex justify-between text-xs text-slate-500 mb-1">
-                                 <span>Background Opacity</span>
-                                 <span>{activeCustomTheme.customConfig?.backgroundOpacity ?? 100}%</span>
+                               <div className="flex justify-between text-xs text-slate-500 mb-1 font-semibold bg-blue-100/50 p-1 rounded">Background</div>
+                               <div className="space-y-3 pl-2">
+                                  <div>
+                                    <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                        <span>Opacity</span>
+                                        <span>{activeCustomTheme.customConfig?.backgroundOpacity ?? 100}%</span>
+                                    </div>
+                                    <input 
+                                        type="range" min="0" max="100" 
+                                        value={activeCustomTheme.customConfig?.backgroundOpacity ?? 100}
+                                        onChange={(e) => updateActiveThemeConfig('backgroundOpacity', Number(e.target.value))}
+                                        className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                                    />
+                                  </div>
+                                  <div>
+                                    <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                        <span>Scale (Zoom)</span>
+                                        <span>{activeCustomTheme.customConfig?.backgroundScale ?? 100}%</span>
+                                    </div>
+                                    <input 
+                                        type="range" min="50" max="200" 
+                                        value={activeCustomTheme.customConfig?.backgroundScale ?? 100}
+                                        onChange={(e) => updateActiveThemeConfig('backgroundScale', Number(e.target.value))}
+                                        className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                                    />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <div className="text-xs text-slate-500 mb-1">Pos X (%)</div>
+                                        <input 
+                                        type="number" min="0" max="100" 
+                                        value={activeCustomTheme.customConfig?.backgroundPositionX ?? 50}
+                                        onChange={(e) => updateActiveThemeConfig('backgroundPositionX', Number(e.target.value))}
+                                        className="w-full border rounded p-1 text-xs"
+                                        />
+                                    </div>
+                                    <div>
+                                        <div className="text-xs text-slate-500 mb-1">Pos Y (%)</div>
+                                        <input 
+                                        type="number" min="0" max="100" 
+                                        value={activeCustomTheme.customConfig?.backgroundPositionY ?? 50}
+                                        onChange={(e) => updateActiveThemeConfig('backgroundPositionY', Number(e.target.value))}
+                                        className="w-full border rounded p-1 text-xs"
+                                        />
+                                    </div>
+                                  </div>
                                </div>
-                               <input 
-                                 type="range" min="0" max="100" 
-                                 value={activeCustomTheme.customConfig?.backgroundOpacity ?? 100}
-                                 onChange={(e) => updateActiveThemeConfig('backgroundOpacity', Number(e.target.value))}
-                                 className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                               />
-                             </div>
-
-                             {/* New Positioning Controls */}
-                             <div>
-                                <div className="flex justify-between text-xs text-slate-500 mb-1">
-                                  <span>Background Scale (Zoom)</span>
-                                  <span>{activeCustomTheme.customConfig?.backgroundScale ?? 100}%</span>
-                                </div>
-                                <input 
-                                  type="range" min="50" max="200" 
-                                  value={activeCustomTheme.customConfig?.backgroundScale ?? 100}
-                                  onChange={(e) => updateActiveThemeConfig('backgroundScale', Number(e.target.value))}
-                                  className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                                />
-                             </div>
-                             <div>
-                                <div className="flex justify-between text-xs text-slate-500 mb-1">
-                                  <span>Background Position X</span>
-                                  <span>{activeCustomTheme.customConfig?.backgroundPositionX ?? 50}%</span>
-                                </div>
-                                <input 
-                                  type="range" min="0" max="100" 
-                                  value={activeCustomTheme.customConfig?.backgroundPositionX ?? 50}
-                                  onChange={(e) => updateActiveThemeConfig('backgroundPositionX', Number(e.target.value))}
-                                  className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                                />
-                             </div>
-                             <div>
-                                <div className="flex justify-between text-xs text-slate-500 mb-1">
-                                  <span>Background Position Y</span>
-                                  <span>{activeCustomTheme.customConfig?.backgroundPositionY ?? 50}%</span>
-                                </div>
-                                <input 
-                                  type="range" min="0" max="100" 
-                                  value={activeCustomTheme.customConfig?.backgroundPositionY ?? 50}
-                                  onChange={(e) => updateActiveThemeConfig('backgroundPositionY', Number(e.target.value))}
-                                  className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                                />
                              </div>
                              
+                             {/* Margins */}
                              <div className="pt-2 border-t border-blue-200">
-                                 <div className="flex justify-between text-xs text-slate-500 mb-1">
-                                   <span>Content Top Margin</span>
-                                   <span>{activeCustomTheme.customConfig?.marginTop ?? 0} mm</span>
+                                 <div className="flex justify-between text-xs text-slate-500 mb-1 font-semibold bg-blue-100/50 p-1 rounded">Page Margins</div>
+                                 <div className="space-y-3 pl-2 mt-2">
+                                    <div>
+                                        <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                        <span>Content Top</span>
+                                        <span>{activeCustomTheme.customConfig?.marginTop ?? 0} mm</span>
+                                        </div>
+                                        <input 
+                                        type="range" min="0" max="150" 
+                                        value={activeCustomTheme.customConfig?.marginTop ?? 0}
+                                        onChange={(e) => updateActiveThemeConfig('marginTop', Number(e.target.value))}
+                                        className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                        <span>Content Bottom</span>
+                                        <span>{activeCustomTheme.customConfig?.marginBottom ?? 0} mm</span>
+                                        </div>
+                                        <input 
+                                        type="range" min="0" max="150" 
+                                        value={activeCustomTheme.customConfig?.marginBottom ?? 0}
+                                        onChange={(e) => updateActiveThemeConfig('marginBottom', Number(e.target.value))}
+                                        className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                    </div>
                                  </div>
-                                 <input 
-                                   type="range" min="0" max="150" 
-                                   value={activeCustomTheme.customConfig?.marginTop ?? 0}
-                                   onChange={(e) => updateActiveThemeConfig('marginTop', Number(e.target.value))}
-                                   className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                                 />
                              </div>
-                             <div>
-                               <div className="flex justify-between text-xs text-slate-500 mb-1">
-                                 <span>Content Bottom Margin</span>
-                                 <span>{activeCustomTheme.customConfig?.marginBottom ?? 0} mm</span>
-                               </div>
-                               <input 
-                                 type="range" min="0" max="150" 
-                                 value={activeCustomTheme.customConfig?.marginBottom ?? 0}
-                                 onChange={(e) => updateActiveThemeConfig('marginBottom', Number(e.target.value))}
-                                 className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                               />
+
+                             {/* Logo Controls */}
+                             <div className="pt-2 border-t border-blue-200">
+                                <div className="flex justify-between text-xs text-slate-500 mb-1 font-semibold bg-blue-100/50 p-1 rounded">Logo Position</div>
+                                <div className="space-y-3 pl-2 mt-2">
+                                    <div>
+                                        <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                          <span>Size</span>
+                                          <span>{activeCustomTheme.customConfig?.logoScale ?? 100}%</span>
+                                        </div>
+                                        <input 
+                                          type="range" min="10" max="200" 
+                                          value={activeCustomTheme.customConfig?.logoScale ?? 100}
+                                          onChange={(e) => updateActiveThemeConfig('logoScale', Number(e.target.value))}
+                                          className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <div className="text-xs text-slate-500 mb-1">Offset X (mm)</div>
+                                            <input 
+                                                type="number" 
+                                                value={activeCustomTheme.customConfig?.logoX ?? 0}
+                                                onChange={(e) => updateActiveThemeConfig('logoX', Number(e.target.value))}
+                                                className="w-full border rounded p-1 text-xs"
+                                            />
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-slate-500 mb-1">Offset Y (mm)</div>
+                                            <input 
+                                                type="number" 
+                                                value={activeCustomTheme.customConfig?.logoY ?? 0}
+                                                onChange={(e) => updateActiveThemeConfig('logoY', Number(e.target.value))}
+                                                className="w-full border rounded p-1 text-xs"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                              </div>
+
+                             {/* Watermark Controls */}
+                             <div className="pt-2 border-t border-blue-200">
+                                <div className="flex justify-between text-xs text-slate-500 mb-1 font-semibold bg-blue-100/50 p-1 rounded">Watermark Position</div>
+                                <div className="space-y-3 pl-2 mt-2">
+                                    <div>
+                                        <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                          <span>Size</span>
+                                          <span>{activeCustomTheme.customConfig?.watermarkScale ?? 100}%</span>
+                                        </div>
+                                        <input 
+                                          type="range" min="10" max="200" 
+                                          value={activeCustomTheme.customConfig?.watermarkScale ?? 100}
+                                          onChange={(e) => updateActiveThemeConfig('watermarkScale', Number(e.target.value))}
+                                          className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <div className="text-xs text-slate-500 mb-1">Offset X (mm)</div>
+                                            <input 
+                                                type="number" 
+                                                value={activeCustomTheme.customConfig?.watermarkX ?? 0}
+                                                onChange={(e) => updateActiveThemeConfig('watermarkX', Number(e.target.value))}
+                                                className="w-full border rounded p-1 text-xs"
+                                            />
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-slate-500 mb-1">Offset Y (mm)</div>
+                                            <input 
+                                                type="number" 
+                                                value={activeCustomTheme.customConfig?.watermarkY ?? 0}
+                                                onChange={(e) => updateActiveThemeConfig('watermarkY', Number(e.target.value))}
+                                                className="w-full border rounded p-1 text-xs"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                             </div>
+
                            </div>
                         </div>
                       )}

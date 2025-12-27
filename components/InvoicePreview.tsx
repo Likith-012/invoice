@@ -35,10 +35,19 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   const marginTop = theme.customConfig?.marginTop !== undefined ? `${theme.customConfig.marginTop}mm` : undefined;
   const marginBottom = theme.customConfig?.marginBottom !== undefined ? `${theme.customConfig.marginBottom}mm` : undefined;
   
-  // New Background Positioning Extraction
+  // Background Positioning
   const bgScale = theme.customConfig?.backgroundScale !== undefined ? theme.customConfig.backgroundScale / 100 : 1;
   const bgX = theme.customConfig?.backgroundPositionX !== undefined ? theme.customConfig.backgroundPositionX : 50;
   const bgY = theme.customConfig?.backgroundPositionY !== undefined ? theme.customConfig.backgroundPositionY : 50;
+
+  // Logo & Watermark Positioning
+  const logoScale = theme.customConfig?.logoScale !== undefined ? theme.customConfig.logoScale / 100 : 1;
+  const logoX = theme.customConfig?.logoX ?? 0;
+  const logoY = theme.customConfig?.logoY ?? 0;
+  
+  const wmScale = theme.customConfig?.watermarkScale !== undefined ? theme.customConfig.watermarkScale / 100 : 1;
+  const wmX = theme.customConfig?.watermarkX ?? 0;
+  const wmY = theme.customConfig?.watermarkY ?? 0;
 
   // Helpers
   const currencyFormatter = new Intl.NumberFormat('en-IN', {
@@ -62,7 +71,13 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   // --- Subcomponents for Rendering ---
 
   const Logo = ({ className }: { className?: string }) => (
-    <div className={className}>
+    <div 
+      className={className} 
+      style={{ 
+        transform: `translate(${logoX}mm, ${logoY}mm) scale(${logoScale})`,
+        transformOrigin: 'center center' // or top right depending on layout, but center is safer for general scaling
+      }}
+    >
       <img 
         src={logoSrc || `/logo.png?t=${timestamp}`}
         alt="Logo" 
@@ -87,14 +102,16 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
          className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden" 
          style={{ opacity: watermarkOpacity / 100 }}
        >
-         {watermarkSrc ? (
-            <img src={watermarkSrc} className="w-3/4 max-w-[500px] grayscale object-contain" alt="Watermark" />
-         ) : (
-            <svg width="400" height="400" viewBox="0 0 100 100" fill={theme.colors.primary}>
-               <path d="M50 15 L85 75 H15 L50 15Z" stroke={theme.colors.primary} strokeWidth="5" fill="none" />
-               <text x="50" y="50" textAnchor="middle" fontSize="10" fill={theme.colors.primary}>INVOICE</text>
-            </svg>
-         )}
+         <div style={{ transform: `translate(${wmX}mm, ${wmY}mm) scale(${wmScale})` }}>
+           {watermarkSrc ? (
+              <img src={watermarkSrc} className="w-3/4 max-w-[500px] grayscale object-contain" alt="Watermark" />
+           ) : (
+              <svg width="400" height="400" viewBox="0 0 100 100" fill={theme.colors.primary}>
+                 <path d="M50 15 L85 75 H15 L50 15Z" stroke={theme.colors.primary} strokeWidth="5" fill="none" />
+                 <text x="50" y="50" textAnchor="middle" fontSize="10" fill={theme.colors.primary}>INVOICE</text>
+              </svg>
+           )}
+         </div>
        </div>
     );
   };
@@ -199,7 +216,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                         </div>
                     </div>
                     <div className="text-right">
-                        <Logo className="mb-2 flex justify-end" />
+                        <Logo className="mb-2 flex justify-end origin-right" />
                     </div>
                 </div>
 
@@ -320,7 +337,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
          )}
          <div className="relative z-10 flex w-full h-full flex-grow">
             <div className="w-[32%] min-h-[297mm] p-8 flex flex-col" style={{ backgroundColor: theme.backgroundImage ? `rgba(0,0,0,${Math.max(0, 0.8 * bgOpacity)})` : (theme.colors.sidebarBg || theme.colors.primary), color: theme.colors.sidebarText || 'white' }}>
-                <div className="mb-12"><Logo className="invert brightness-0" /></div>
+                <div className="mb-12"><Logo className="invert brightness-0 origin-top-left" /></div>
                 <div className="mb-8">
                 <h3 className="text-xs font-bold uppercase tracking-widest mb-4 opacity-70 border-b border-white/20 pb-2">From</h3>
                 <p className="font-bold text-lg leading-tight mb-2">{sender.name}</p>
@@ -405,7 +422,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             )}
            <div className="relative z-10 bg-white/90 p-8 rounded-lg min-h-full flex flex-col flex-grow">
                 <div className="text-center mb-12 border-b-2 border-slate-900 pb-8" style={{ borderColor: theme.colors.primary }}>
-                    <Logo className="h-16 w-auto mx-auto mb-4" />
+                    <Logo className="h-16 w-auto mx-auto mb-4 origin-center" />
                     <h1 className="text-3xl font-bold uppercase tracking-widest" style={{ color: theme.colors.primary }}>{sender.name}</h1>
                     <p className="text-xs mt-2 uppercase tracking-wider">{sender.website}</p>
                 </div>

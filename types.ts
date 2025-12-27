@@ -68,6 +68,13 @@ export interface InvoiceTheme {
     backgroundScale?: number; // 50-200 (percentage)
     backgroundPositionX?: number; // 0-100 (percentage)
     backgroundPositionY?: number; // 0-100 (percentage)
+    // Logo & Watermark Positioning
+    logoScale?: number; // 10-200 (%)
+    logoX?: number; // mm offset
+    logoY?: number; // mm offset
+    watermarkScale?: number; // 10-200 (%)
+    watermarkX?: number; // mm offset
+    watermarkY?: number; // mm offset
   };
 }
 
