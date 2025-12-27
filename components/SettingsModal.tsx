@@ -298,7 +298,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 
                 {/* Logo Upload */}
                 <div className="w-full sm:w-1/3">
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Company Logo (PNG/JPG)</label>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Company Logo</label>
                   <div 
                     className="border-2 border-dashed border-slate-300 rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors h-40 text-center relative overflow-hidden"
                     onClick={() => fileInputRef.current?.click()}
@@ -313,7 +313,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       type="file" 
                       ref={fileInputRef} 
                       className="hidden" 
-                      accept="image/png,image/jpeg,image/svg+xml"
+                      accept="image/*"
                       onChange={(e) => handleFileChange(e, onUpdateLogo)}
                     />
                   </div>
