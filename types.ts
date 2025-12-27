@@ -65,6 +65,9 @@ export interface InvoiceTheme {
     backgroundOpacity?: number; // 0-100
     marginTop?: number; // in mm
     marginBottom?: number; // in mm
+    backgroundScale?: number; // 50-200 (percentage)
+    backgroundPositionX?: number; // 0-100 (percentage)
+    backgroundPositionY?: number; // 0-100 (percentage)
   };
 }
 

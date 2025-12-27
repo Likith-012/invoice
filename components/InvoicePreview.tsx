@@ -34,6 +34,11 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   const bgOpacity = theme.customConfig?.backgroundOpacity !== undefined ? theme.customConfig.backgroundOpacity / 100 : 1;
   const marginTop = theme.customConfig?.marginTop !== undefined ? `${theme.customConfig.marginTop}mm` : undefined;
   const marginBottom = theme.customConfig?.marginBottom !== undefined ? `${theme.customConfig.marginBottom}mm` : undefined;
+  
+  // New Background Positioning Extraction
+  const bgScale = theme.customConfig?.backgroundScale !== undefined ? theme.customConfig.backgroundScale / 100 : 1;
+  const bgX = theme.customConfig?.backgroundPositionX !== undefined ? theme.customConfig.backgroundPositionX : 50;
+  const bgY = theme.customConfig?.backgroundPositionY !== undefined ? theme.customConfig.backgroundPositionY : 50;
 
   // Helpers
   const currencyFormatter = new Intl.NumberFormat('en-IN', {
@@ -157,8 +162,17 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         <div className={containerClass}>
             {/* Background Image or Waves */}
             {theme.backgroundImage ? (
-                <div className="absolute inset-0 z-0" style={{ opacity: bgOpacity }}>
-                    <img src={theme.backgroundImage} className="w-full h-full object-cover" alt="" />
+                <div className="absolute inset-0 z-0 overflow-hidden" style={{ opacity: bgOpacity }}>
+                    <img 
+                        src={theme.backgroundImage} 
+                        className="w-full h-full object-cover" 
+                        style={{ 
+                            objectPosition: `${bgX}% ${bgY}%`,
+                            transform: `scale(${bgScale})`,
+                            transformOrigin: `${bgX}% ${bgY}%`
+                        }}
+                        alt="" 
+                    />
                 </div>
             ) : (
                 <>
@@ -291,8 +305,17 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
      return (
       <div className={containerClass}>
          {theme.backgroundImage && (
-            <div className="absolute inset-0 z-0" style={{ opacity: bgOpacity }}>
-                <img src={theme.backgroundImage} className="w-full h-full object-cover" alt="" />
+            <div className="absolute inset-0 z-0 overflow-hidden" style={{ opacity: bgOpacity }}>
+                <img 
+                    src={theme.backgroundImage} 
+                    className="w-full h-full object-cover" 
+                    style={{ 
+                        objectPosition: `${bgX}% ${bgY}%`,
+                        transform: `scale(${bgScale})`,
+                        transformOrigin: `${bgX}% ${bgY}%`
+                    }}
+                    alt="" 
+                />
             </div>
          )}
          <div className="relative z-10 flex w-full h-full flex-grow">
@@ -367,8 +390,17 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   return (
         <div className={`${containerClass} p-16`} style={{ paddingTop: marginTop, paddingBottom: marginBottom }}>
            {theme.backgroundImage && (
-                <div className="absolute inset-0 z-0" style={{ opacity: bgOpacity }}>
-                    <img src={theme.backgroundImage} className="w-full h-full object-cover" alt="" />
+                <div className="absolute inset-0 z-0 overflow-hidden" style={{ opacity: bgOpacity }}>
+                    <img 
+                        src={theme.backgroundImage} 
+                        className="w-full h-full object-cover" 
+                        style={{ 
+                            objectPosition: `${bgX}% ${bgY}%`,
+                            transform: `scale(${bgScale})`,
+                            transformOrigin: `${bgX}% ${bgY}%`
+                        }}
+                        alt="" 
+                    />
                 </div>
             )}
            <div className="relative z-10 bg-white/90 p-8 rounded-lg min-h-full flex flex-col flex-grow">

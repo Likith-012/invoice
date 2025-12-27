@@ -164,7 +164,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             customConfig: {
                 backgroundOpacity: 100,
                 marginTop: 0,
-                marginBottom: 0
+                marginBottom: 0,
+                backgroundScale: 100,
+                backgroundPositionX: 50,
+                backgroundPositionY: 50
             }
         };
         onAddTheme(themeToSave);
@@ -452,17 +455,56 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                  className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                                />
                              </div>
+
+                             {/* New Positioning Controls */}
                              <div>
-                               <div className="flex justify-between text-xs text-slate-500 mb-1">
-                                 <span>Content Top Margin</span>
-                                 <span>{activeCustomTheme.customConfig?.marginTop ?? 0} mm</span>
-                               </div>
-                               <input 
-                                 type="range" min="0" max="150" 
-                                 value={activeCustomTheme.customConfig?.marginTop ?? 0}
-                                 onChange={(e) => updateActiveThemeConfig('marginTop', Number(e.target.value))}
-                                 className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                               />
+                                <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                  <span>Background Scale (Zoom)</span>
+                                  <span>{activeCustomTheme.customConfig?.backgroundScale ?? 100}%</span>
+                                </div>
+                                <input 
+                                  type="range" min="50" max="200" 
+                                  value={activeCustomTheme.customConfig?.backgroundScale ?? 100}
+                                  onChange={(e) => updateActiveThemeConfig('backgroundScale', Number(e.target.value))}
+                                  className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                                />
+                             </div>
+                             <div>
+                                <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                  <span>Background Position X</span>
+                                  <span>{activeCustomTheme.customConfig?.backgroundPositionX ?? 50}%</span>
+                                </div>
+                                <input 
+                                  type="range" min="0" max="100" 
+                                  value={activeCustomTheme.customConfig?.backgroundPositionX ?? 50}
+                                  onChange={(e) => updateActiveThemeConfig('backgroundPositionX', Number(e.target.value))}
+                                  className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                                />
+                             </div>
+                             <div>
+                                <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                  <span>Background Position Y</span>
+                                  <span>{activeCustomTheme.customConfig?.backgroundPositionY ?? 50}%</span>
+                                </div>
+                                <input 
+                                  type="range" min="0" max="100" 
+                                  value={activeCustomTheme.customConfig?.backgroundPositionY ?? 50}
+                                  onChange={(e) => updateActiveThemeConfig('backgroundPositionY', Number(e.target.value))}
+                                  className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                                />
+                             </div>
+                             
+                             <div className="pt-2 border-t border-blue-200">
+                                 <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                   <span>Content Top Margin</span>
+                                   <span>{activeCustomTheme.customConfig?.marginTop ?? 0} mm</span>
+                                 </div>
+                                 <input 
+                                   type="range" min="0" max="150" 
+                                   value={activeCustomTheme.customConfig?.marginTop ?? 0}
+                                   onChange={(e) => updateActiveThemeConfig('marginTop', Number(e.target.value))}
+                                   className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                                 />
                              </div>
                              <div>
                                <div className="flex justify-between text-xs text-slate-500 mb-1">
