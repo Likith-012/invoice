@@ -1,4 +1,3 @@
-
 export interface Client {
   id: string;
   name: string;
@@ -60,6 +59,7 @@ export interface InvoiceTheme {
   };
   font: 'serif' | 'sans' | 'mono';
   isCustom?: boolean;
+  backgroundImage?: string; // Base64 string for full page background
 }
 
 export const DEFAULT_THEMES: Record<string, InvoiceTheme> = {

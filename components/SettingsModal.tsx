@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { SenderDetails, Client, InvoiceTheme, DEFAULT_THEMES } from '../types';
-import { X, Upload, Save, Trash2, User, CreditCard, Building, Settings as SettingsIcon, LayoutTemplate, Droplets, Plus, Palette } from 'lucide-react';
+import { X, Upload, Save, Trash2, User, CreditCard, Building, Settings as SettingsIcon, LayoutTemplate, Droplets, Plus, Palette, FileJson, Image as ImageIcon, Download } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface SettingsModalProps {
@@ -21,6 +21,8 @@ interface SettingsModalProps {
   customThemes?: InvoiceTheme[];
   onAddTheme?: (theme: InvoiceTheme) => void;
   onDeleteTheme?: (id: string) => void;
+  customWatermark?: string;
+  onUpdateCustomWatermark?: (base64: string) => void;
 }
 
 type Tab = 'company' | 'payment' | 'preferences' | 'clients' | 'templates';
@@ -42,12 +44,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onToggleWatermark,
   customThemes = [],
   onAddTheme,
-  onDeleteTheme
+  onDeleteTheme,
+  customWatermark,
+  onUpdateCustomWatermark
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('company');
   const [localSender, setLocalSender] = useState<SenderDetails>(senderDetails);
   const [localPrefix, setLocalPrefix] = useState(invoicePrefix);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const watermarkInputRef = useRef<HTMLInputElement>(null);
+  const themeFileInputRef = useRef<HTMLInputElement>(null);
+  const bgImageInputRef = useRef<HTMLInputElement>(null);
 
   // Template Creator State
   const [isCreatingTheme, setIsCreatingTheme] = useState(false);
@@ -66,12 +73,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     onClose();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        onUpdateLogo(reader.result as string);
+        callback(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -98,12 +105,57 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             sidebarBg: newTheme.layout === 'sidebar' ? newTheme.colors?.primary : undefined,
             sidebarText: 'white'
         },
-        isCustom: true
+        isCustom: true,
+        backgroundImage: newTheme.backgroundImage
     };
     
     onAddTheme(themeToSave);
     setIsCreatingTheme(false);
-    onUpdateTemplate(themeToSave.id); // Auto select new theme
+    onUpdateTemplate(themeToSave.id);
+  };
+
+  const handleImportTheme = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onAddTheme) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const imported = JSON.parse(event.target?.result as string);
+                if (imported.name && imported.colors) {
+                    const themeWithNewId = { ...imported, id: `imported-${uuidv4()}`, isCustom: true };
+                    onAddTheme(themeWithNewId);
+                    onUpdateTemplate(themeWithNewId.id);
+                } else {
+                    alert("Invalid theme file format.");
+                }
+            } catch (err) {
+                alert("Failed to parse JSON file.");
+            }
+        };
+        reader.readAsText(file);
+    }
+  };
+
+  const handleCreateFromImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileChange(e, (base64) => {
+        if (!onAddTheme) return;
+        const themeToSave: InvoiceTheme = {
+            id: `img-theme-${uuidv4()}`,
+            name: 'Custom Image Theme',
+            layout: 'standard', // Image backgrounds usually imply a standard overlay
+            font: 'sans',
+            colors: {
+                primary: '#000000',
+                accent: '#000000',
+                text: '#000000',
+                bg: 'transparent'
+            },
+            isCustom: true,
+            backgroundImage: base64
+        };
+        onAddTheme(themeToSave);
+        onUpdateTemplate(themeToSave.id);
+    });
   };
 
   return (
@@ -196,7 +248,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       ref={fileInputRef} 
                       className="hidden" 
                       accept="image/png,image/jpeg,image/svg+xml"
-                      onChange={handleFileChange}
+                      onChange={(e) => handleFileChange(e, onUpdateLogo)}
                     />
                   </div>
                   {logo && (
@@ -324,7 +376,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                              onClick={() => onUpdateTemplate(tpl.id)}
                              className={`relative rounded-lg border-2 p-3 flex flex-col items-center gap-2 transition-all hover:bg-slate-50 group ${templateId === tpl.id ? 'border-blue-600 ring-1 ring-blue-600 bg-blue-50' : 'border-slate-200'}`}
                            >
-                              <div className="w-12 h-16 rounded shadow-sm" style={{ backgroundColor: tpl.colors.primary }}></div>
+                              <div className="w-12 h-16 rounded shadow-sm overflow-hidden" style={{ backgroundColor: tpl.colors.primary }}>
+                                {tpl.backgroundImage && <img src={tpl.backgroundImage} className="w-full h-full object-cover opacity-50" />}
+                              </div>
                               <span className="text-xs font-medium text-slate-700 text-center truncate w-full">{tpl.name}</span>
                               {templateId === tpl.id && <div className="absolute top-2 right-2 w-2 h-2 bg-blue-600 rounded-full"></div>}
                               <div 
@@ -343,22 +397,96 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                              className="relative rounded-lg border-2 border-dashed border-slate-300 p-3 flex flex-col items-center justify-center gap-2 transition-all hover:border-blue-400 hover:bg-blue-50 text-slate-400 hover:text-blue-500"
                            >
                               <Plus size={24} />
-                              <span className="text-xs font-medium">Create New</span>
+                              <span className="text-xs font-medium text-center">Create Custom</span>
                            </button>
+                      </div>
+                      
+                      {/* Advanced Actions */}
+                      <div className="grid grid-cols-2 gap-3 mt-4">
+                        <button
+                           onClick={() => themeFileInputRef.current?.click()}
+                           className="flex items-center justify-center gap-2 py-2 px-3 bg-slate-100 hover:bg-slate-200 rounded text-xs font-medium text-slate-600 transition-colors border border-slate-200"
+                        >
+                            <FileJson size={14} /> Import Theme (JSON)
+                            <input 
+                                type="file" 
+                                ref={themeFileInputRef} 
+                                className="hidden" 
+                                accept=".json" 
+                                onChange={handleImportTheme}
+                            />
+                        </button>
+                        <button
+                           onClick={() => bgImageInputRef.current?.click()}
+                           className="flex items-center justify-center gap-2 py-2 px-3 bg-slate-100 hover:bg-slate-200 rounded text-xs font-medium text-slate-600 transition-colors border border-slate-200"
+                        >
+                            <ImageIcon size={14} /> New from Background
+                            <input 
+                                type="file" 
+                                ref={bgImageInputRef} 
+                                className="hidden" 
+                                accept="image/*" 
+                                onChange={handleCreateFromImage}
+                            />
+                        </button>
                       </div>
                    </div>
 
                    <div className="border-t pt-4">
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                         <div className={`w-10 h-6 rounded-full p-1 transition-colors ${showWatermark ? 'bg-blue-600' : 'bg-slate-300'}`} onClick={() => onToggleWatermark(!showWatermark)}>
-                            <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${showWatermark ? 'translate-x-4' : ''}`}></div>
-                         </div>
-                         <span className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                            <Droplets size={16} className="text-slate-400" />
-                            Show Watermark on Invoice
-                         </span>
-                      </label>
-                      <p className="text-xs text-slate-500 mt-1 ml-12">Displays your logo at low opacity in the center of the invoice.</p>
+                      <div className="flex flex-col gap-4">
+                          <label className="flex items-center gap-3 cursor-pointer group">
+                             <div className={`w-10 h-6 rounded-full p-1 transition-colors ${showWatermark ? 'bg-blue-600' : 'bg-slate-300'}`} onClick={() => onToggleWatermark(!showWatermark)}>
+                                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${showWatermark ? 'translate-x-4' : ''}`}></div>
+                             </div>
+                             <span className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                                <Droplets size={16} className="text-slate-400" />
+                                Show Watermark
+                             </span>
+                          </label>
+                          
+                          {/* Custom Watermark Upload */}
+                          {showWatermark && (
+                            <div className="ml-12 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                                <label className="block text-xs font-medium text-slate-500 mb-2">Custom Watermark Image (Optional)</label>
+                                <div className="flex items-center gap-4">
+                                    <div 
+                                        className="w-16 h-16 border border-dashed border-slate-300 rounded flex items-center justify-center bg-white cursor-pointer hover:border-blue-400"
+                                        onClick={() => watermarkInputRef.current?.click()}
+                                    >
+                                        {customWatermark ? (
+                                            <img src={customWatermark} className="w-full h-full object-contain p-1" />
+                                        ) : (
+                                            <Upload size={16} className="text-slate-400" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <input 
+                                            type="file" 
+                                            ref={watermarkInputRef} 
+                                            className="hidden" 
+                                            accept="image/png,image/jpeg"
+                                            onChange={(e) => handleFileChange(e, (base64) => onUpdateCustomWatermark && onUpdateCustomWatermark(base64))}
+                                        />
+                                        <button 
+                                            onClick={() => watermarkInputRef.current?.click()}
+                                            className="text-xs text-blue-600 hover:underline block mb-1"
+                                        >
+                                            Upload Image
+                                        </button>
+                                        {customWatermark && (
+                                            <button 
+                                                onClick={() => onUpdateCustomWatermark && onUpdateCustomWatermark('')}
+                                                className="text-xs text-red-500 hover:underline"
+                                            >
+                                                Remove Custom Watermark
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-slate-400 mt-2">Overrides your logo for the watermark.</p>
+                            </div>
+                          )}
+                      </div>
                    </div>
                  </>
                )}

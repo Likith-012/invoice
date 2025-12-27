@@ -7,6 +7,7 @@ interface InvoicePreviewProps {
   templateId?: string;
   showWatermark?: boolean;
   customThemes?: InvoiceTheme[];
+  customWatermark?: string;
 }
 
 const InvoicePreview: React.FC<InvoicePreviewProps> = ({ 
@@ -14,7 +15,8 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   logoSrc, 
   templateId = 'classic-blue',
   showWatermark = false,
-  customThemes = []
+  customThemes = [],
+  customWatermark
 }) => {
   const [timestamp] = useState(Date.now());
   
@@ -62,10 +64,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
 
   const Watermark = () => {
     if (!showWatermark) return null;
+    const watermarkSrc = customWatermark || logoSrc;
+    
     return (
        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.05] z-0 overflow-hidden">
-         {logoSrc ? (
-            <img src={logoSrc} className="w-3/4 max-w-[500px] grayscale" />
+         {watermarkSrc ? (
+            <img src={watermarkSrc} className="w-3/4 max-w-[500px] grayscale object-contain" alt="Watermark" />
          ) : (
             <svg width="400" height="400" viewBox="0 0 100 100" fill={theme.colors.primary}>
                <path d="M50 15 L85 75 H15 L50 15Z" stroke={theme.colors.primary} strokeWidth="5" fill="none" />
@@ -136,24 +140,165 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   );
 
 
-  // --- LAYOUTS ---
+  // --- MAIN RENDER ---
+  
+  // Base classes
+  const containerClass = `bg-white shadow-2xl w-[210mm] min-h-[297mm] mx-auto relative flex flex-col overflow-hidden print-exact-a4 ${theme.font === 'serif' ? 'font-serif' : theme.font === 'mono' ? 'font-mono' : 'font-sans'}`;
 
-  // 1. STANDARD LAYOUT (Classic Waves/Header)
-  if (theme.layout === 'standard') {
+  // If using sidebar layout
+  if (theme.layout === 'sidebar') {
     return (
-      <div className={`bg-white shadow-2xl w-[210mm] min-h-[297mm] mx-auto relative flex flex-col overflow-hidden print-exact-a4 ${theme.font === 'serif' ? 'font-serif' : theme.font === 'mono' ? 'font-mono' : 'font-sans'}`}>
-        
-        {/* Decorative Header (Waves or Solid Block) */}
-        <div className="absolute top-0 left-0 right-0 h-40 z-0 pointer-events-none" style={{ fill: theme.colors.primary }}>
-            {theme.id.includes('classic') ? (
-               <svg viewBox="0 0 794 160" preserveAspectRatio="none" className="w-full h-full">
-                 <path d="M0,0 L794,0 L794,40 C600,100 200,60 0,120 Z" fill={theme.colors.accent} opacity="0.4" />
-                 <path d="M0,0 L794,0 L794,20 C500,60 300,60 0,40 Z" fill={theme.colors.primary} />
-               </svg>
-            ) : (
-               <div className="w-full h-32" style={{ backgroundColor: theme.colors.primary }}></div>
+      <div className={containerClass}>
+         {/* Background Image if present */}
+         {theme.backgroundImage && (
+            <div className="absolute inset-0 z-0">
+                <img src={theme.backgroundImage} className="w-full h-full object-cover" alt="" />
+            </div>
+         )}
+         
+         <div className="relative z-10 flex w-full h-full flex-grow">
+            {/* Sidebar */}
+            <div className="w-[32%] min-h-[297mm] p-8 flex flex-col" style={{ backgroundColor: theme.backgroundImage ? 'rgba(0,0,0,0.8)' : (theme.colors.sidebarBg || theme.colors.primary), color: theme.colors.sidebarText || 'white' }}>
+                <div className="mb-12"><Logo className="invert brightness-0" /></div>
+                
+                <div className="mb-8">
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-4 opacity-70 border-b border-white/20 pb-2">From</h3>
+                <p className="font-bold text-lg leading-tight mb-2">{sender.name}</p>
+                <p className="text-sm whitespace-pre-line opacity-80">{sender.address}</p>
+                <p className="text-sm mt-4 opacity-80">{sender.email}</p>
+                <p className="text-sm opacity-80">{sender.website}</p>
+                <p className="text-sm opacity-80">{sender.mobile}</p>
+                </div>
+
+                <div className="mt-auto">
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-4 opacity-70 border-b border-white/20 pb-2">Bank Details</h3>
+                <div className="text-sm space-y-2 opacity-90">
+                    <p>{sender.accountName}</p>
+                    <p>{sender.accountNumber}</p>
+                    <p>{sender.ifsCode}</p>
+                </div>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="w-[68%] p-10 flex flex-col relative" style={{ backgroundColor: theme.backgroundImage ? 'rgba(255,255,255,0.95)' : 'transparent' }}>
+                <div className="flex justify-between items-start mb-12">
+                <div>
+                    <h1 className="text-4xl font-bold uppercase tracking-tight text-slate-900 mb-1">{isQuotation ? 'Quotation' : 'Invoice'}</h1>
+                    <span className="text-slate-400 text-sm"># {data.invoiceNumber}</span>
+                </div>
+                <div className="text-right">
+                    <p className="text-sm text-slate-500">Date</p>
+                    <p className="font-medium">{formatDate(data.date)}</p>
+                </div>
+                </div>
+
+                <div className="mb-10">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Bill To</h3>
+                {client ? (
+                    <div>
+                        <p className="text-xl font-bold text-slate-800">{client.name}</p>
+                        <p className="text-sm text-slate-600 whitespace-pre-line mt-1">{client.address}</p>
+                    </div>
+                ) : <span className="text-slate-300">Select Client</span>}
+                </div>
+
+                <div className="relative flex-grow">
+                <Watermark />
+                <Table />
+                </div>
+
+                <div className="mt-8 pt-8 border-t border-slate-200">
+                <div className="w-1/2 ml-auto">
+                    <Totals />
+                </div>
+                </div>
+            </div>
+         </div>
+      </div>
+    );
+  }
+
+  // If using Minimal Layout
+  if (theme.layout === 'minimal') {
+    return (
+        <div className={`${containerClass} p-16`}>
+           {theme.backgroundImage && (
+                <div className="absolute inset-0 z-0">
+                    <img src={theme.backgroundImage} className="w-full h-full object-cover" alt="" />
+                </div>
             )}
+           
+           <div className="relative z-10 bg-white/90 p-8 rounded-lg min-h-full flex flex-col flex-grow">
+                <div className="text-center mb-12 border-b-2 border-slate-900 pb-8" style={{ borderColor: theme.colors.primary }}>
+                    <Logo className="h-16 w-auto mx-auto mb-4" />
+                    <h1 className="text-3xl font-bold uppercase tracking-widest" style={{ color: theme.colors.primary }}>{sender.name}</h1>
+                    <p className="text-xs mt-2 uppercase tracking-wider">{sender.website} • {sender.mobile}</p>
+                </div>
+
+                <div className="flex justify-between items-end mb-16">
+                    <div>
+                        <h2 className="text-4xl font-bold" style={{ color: theme.colors.text }}>{isQuotation ? 'QUOTATION' : 'INVOICE'}</h2>
+                        <p className="text-sm mt-1"># {data.invoiceNumber} • {formatDate(data.date)}</p>
+                    </div>
+                    <div className="text-right max-w-[250px]">
+                        <p className="text-xs uppercase font-bold mb-1">Bill To:</p>
+                        {client && (
+                        <>
+                            <p className="font-bold">{client.name}</p>
+                            <p className="text-xs whitespace-pre-line">{client.address}</p>
+                        </>
+                        )}
+                    </div>
+                </div>
+
+                <div className="relative flex-grow">
+                    <Watermark />
+                    <Table transparentHeader={true} />
+                </div>
+
+                <div className="flex justify-between items-start mt-8 pt-8 border-t-2 border-slate-900" style={{ borderColor: theme.colors.primary }}>
+                    <div className="w-1/2 text-xs">
+                        <p className="font-bold uppercase mb-2">Payment Info:</p>
+                        <p>{sender.accountName}</p>
+                        <p>{sender.accountNumber} • {sender.ifsCode}</p>
+                        <p>{sender.branch}</p>
+                    </div>
+                    <div className="w-1/3 text-right">
+                        <div className="flex justify-between text-lg font-bold">
+                        <span>Total</span>
+                        <span>{currencyFormatter.format(total)}</span>
+                        </div>
+                    </div>
+                </div>
+           </div>
         </div>
+    );
+  }
+
+  // 1. STANDARD LAYOUT (Default)
+  return (
+    <div className={containerClass}>
+        {/* Background Image if present */}
+        {theme.backgroundImage && (
+            <div className="absolute inset-0 z-0">
+                <img src={theme.backgroundImage} className="w-full h-full object-cover" alt="" />
+            </div>
+        )}
+
+        {/* Decorative Header (Waves or Solid Block) - Only show if NO bg image is present OR transparent is needed */}
+        {!theme.backgroundImage && (
+            <div className="absolute top-0 left-0 right-0 h-40 z-0 pointer-events-none" style={{ fill: theme.colors.primary }}>
+                {theme.id.includes('classic') ? (
+                <svg viewBox="0 0 794 160" preserveAspectRatio="none" className="w-full h-full">
+                    <path d="M0,0 L794,0 L794,40 C600,100 200,60 0,120 Z" fill={theme.colors.accent} opacity="0.4" />
+                    <path d="M0,0 L794,0 L794,20 C500,60 300,60 0,40 Z" fill={theme.colors.primary} />
+                </svg>
+                ) : (
+                <div className="w-full h-32" style={{ backgroundColor: theme.colors.primary }}></div>
+                )}
+            </div>
+        )}
 
         <div className="relative z-10 px-12 pt-16 flex-grow flex flex-col">
             <div className="flex justify-between items-start mb-12">
@@ -201,121 +346,10 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             </div>
         </div>
 
-        {/* Footer Wave/Bar */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 z-0" style={{ backgroundColor: theme.colors.primary }}></div>
-      </div>
-    );
-  }
-
-  // 2. SIDEBAR LAYOUT
-  if (theme.layout === 'sidebar') {
-    return (
-      <div className={`bg-white shadow-2xl w-[210mm] min-h-[297mm] mx-auto flex overflow-hidden print-exact-a4 text-slate-800 ${theme.font === 'serif' ? 'font-serif' : theme.font === 'mono' ? 'font-mono' : 'font-sans'}`}>
-         {/* Sidebar */}
-         <div className="w-[32%] h-full p-8 flex flex-col" style={{ backgroundColor: theme.colors.sidebarBg || theme.colors.primary, color: theme.colors.sidebarText || 'white' }}>
-            <div className="mb-12"><Logo className="invert brightness-0" /></div>
-            
-            <div className="mb-8">
-               <h3 className="text-xs font-bold uppercase tracking-widest mb-4 opacity-70 border-b border-white/20 pb-2">From</h3>
-               <p className="font-bold text-lg leading-tight mb-2">{sender.name}</p>
-               <p className="text-sm whitespace-pre-line opacity-80">{sender.address}</p>
-               <p className="text-sm mt-4 opacity-80">{sender.email}</p>
-               <p className="text-sm opacity-80">{sender.website}</p>
-               <p className="text-sm opacity-80">{sender.mobile}</p>
-            </div>
-
-            <div className="mt-auto">
-               <h3 className="text-xs font-bold uppercase tracking-widest mb-4 opacity-70 border-b border-white/20 pb-2">Bank Details</h3>
-               <div className="text-sm space-y-2 opacity-90">
-                  <p>{sender.accountName}</p>
-                  <p>{sender.accountNumber}</p>
-                  <p>{sender.ifsCode}</p>
-               </div>
-            </div>
-         </div>
-
-         {/* Main Content */}
-         <div className="w-[68%] p-10 flex flex-col relative">
-            <div className="flex justify-between items-start mb-12">
-               <div>
-                  <h1 className="text-4xl font-bold uppercase tracking-tight text-slate-900 mb-1">{isQuotation ? 'Quotation' : 'Invoice'}</h1>
-                  <span className="text-slate-400 text-sm"># {data.invoiceNumber}</span>
-               </div>
-               <div className="text-right">
-                  <p className="text-sm text-slate-500">Date</p>
-                  <p className="font-medium">{formatDate(data.date)}</p>
-               </div>
-            </div>
-
-            <div className="mb-10">
-               <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Bill To</h3>
-               {client ? (
-                  <div>
-                     <p className="text-xl font-bold text-slate-800">{client.name}</p>
-                     <p className="text-sm text-slate-600 whitespace-pre-line mt-1">{client.address}</p>
-                  </div>
-               ) : <span className="text-slate-300">Select Client</span>}
-            </div>
-
-            <div className="relative flex-grow">
-               <Watermark />
-               <Table />
-            </div>
-
-            <div className="mt-8 pt-8 border-t border-slate-200">
-               <div className="w-1/2 ml-auto">
-                  <Totals />
-               </div>
-            </div>
-         </div>
-      </div>
-    );
-  }
-
-  // 3. MINIMAL LAYOUT
-  return (
-    <div className={`bg-white shadow-2xl w-[210mm] min-h-[297mm] mx-auto relative flex flex-col p-16 overflow-hidden print-exact-a4 ${theme.font === 'serif' ? 'font-serif' : theme.font === 'mono' ? 'font-mono' : 'font-sans'}`}>
-       <div className="text-center mb-12 border-b-2 border-slate-900 pb-8" style={{ borderColor: theme.colors.primary }}>
-          <Logo className="h-16 w-auto mx-auto mb-4" />
-          <h1 className="text-3xl font-bold uppercase tracking-widest" style={{ color: theme.colors.primary }}>{sender.name}</h1>
-          <p className="text-xs mt-2 uppercase tracking-wider">{sender.website} • {sender.mobile}</p>
-       </div>
-
-       <div className="flex justify-between items-end mb-16">
-          <div>
-             <h2 className="text-4xl font-bold" style={{ color: theme.colors.text }}>{isQuotation ? 'QUOTATION' : 'INVOICE'}</h2>
-             <p className="text-sm mt-1"># {data.invoiceNumber} • {formatDate(data.date)}</p>
-          </div>
-          <div className="text-right max-w-[250px]">
-             <p className="text-xs uppercase font-bold mb-1">Bill To:</p>
-             {client && (
-               <>
-                 <p className="font-bold">{client.name}</p>
-                 <p className="text-xs whitespace-pre-line">{client.address}</p>
-               </>
-             )}
-          </div>
-       </div>
-
-       <div className="relative flex-grow">
-          <Watermark />
-          <Table transparentHeader={true} />
-       </div>
-
-       <div className="flex justify-between items-start mt-8 pt-8 border-t-2 border-slate-900" style={{ borderColor: theme.colors.primary }}>
-          <div className="w-1/2 text-xs">
-             <p className="font-bold uppercase mb-2">Payment Info:</p>
-             <p>{sender.accountName}</p>
-             <p>{sender.accountNumber} • {sender.ifsCode}</p>
-             <p>{sender.branch}</p>
-          </div>
-          <div className="w-1/3 text-right">
-             <div className="flex justify-between text-lg font-bold">
-               <span>Total</span>
-               <span>{currencyFormatter.format(total)}</span>
-             </div>
-          </div>
-       </div>
+        {/* Footer Wave/Bar - Hide if background image exists */}
+        {!theme.backgroundImage && (
+            <div className="absolute bottom-0 left-0 right-0 h-16 z-0" style={{ backgroundColor: theme.colors.primary }}></div>
+        )}
     </div>
   );
 };

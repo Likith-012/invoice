@@ -40,6 +40,11 @@ const App: React.FC = () => {
     return localStorage.getItem('invoicify_logo') || undefined;
   });
 
+  // Load Custom Watermark
+  const [customWatermark, setCustomWatermark] = useState<string | undefined>(() => {
+    return localStorage.getItem('invoicify_custom_watermark') || undefined;
+  });
+
   // Load Invoice Prefix
   const [invoicePrefix, setInvoicePrefix] = useState<string>(() => {
     return localStorage.getItem('invoicify_prefix') || 'AS';
@@ -95,6 +100,11 @@ const App: React.FC = () => {
     if (customLogo) localStorage.setItem('invoicify_logo', customLogo);
     else localStorage.removeItem('invoicify_logo');
   }, [customLogo]);
+
+  useEffect(() => {
+    if (customWatermark) localStorage.setItem('invoicify_custom_watermark', customWatermark);
+    else localStorage.removeItem('invoicify_custom_watermark');
+  }, [customWatermark]);
 
   useEffect(() => {
     localStorage.setItem('invoicify_prefix', invoicePrefix);
@@ -215,6 +225,8 @@ const App: React.FC = () => {
         customThemes={customThemes}
         onAddTheme={handleAddTheme}
         onDeleteTheme={handleDeleteTheme}
+        customWatermark={customWatermark}
+        onUpdateCustomWatermark={setCustomWatermark}
       />
 
       {/* SCREEN LAYOUT (Hidden during print) */}
@@ -444,6 +456,7 @@ const App: React.FC = () => {
                   templateId={templateId}
                   showWatermark={showWatermark}
                   customThemes={customThemes}
+                  customWatermark={customWatermark}
                 />
              </div>
           </div>
@@ -460,6 +473,7 @@ const App: React.FC = () => {
           templateId={templateId}
           showWatermark={showWatermark}
           customThemes={customThemes}
+          customWatermark={customWatermark}
         />
       </div>
     </>
