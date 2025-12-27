@@ -17,6 +17,7 @@ export interface SenderDetails {
   pan: string;
   mobile: string;
   website: string;
+  email: string;
 }
 
 export interface AppSettings {
@@ -60,6 +61,11 @@ export interface InvoiceTheme {
   font: 'serif' | 'sans' | 'mono';
   isCustom?: boolean;
   backgroundImage?: string; // Base64 string for full page background
+  customConfig?: {
+    backgroundOpacity?: number; // 0-100
+    marginTop?: number; // in mm
+    marginBottom?: number; // in mm
+  };
 }
 
 export const DEFAULT_THEMES: Record<string, InvoiceTheme> = {
@@ -169,5 +175,6 @@ export const DEFAULT_SENDER: SenderDetails = {
   ifsCode: "HDFC0003668",
   pan: "CQFPV6920D",
   mobile: "8050187327",
-  website: "www.adversitysolutions.in"
+  website: "www.adversitysolutions.in",
+  email: "billing@adversitysolutions.in"
 };

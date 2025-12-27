@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { SenderDetails, Client, InvoiceTheme, DEFAULT_THEMES } from '../types';
-import { X, Upload, Save, Trash2, User, CreditCard, Building, Settings as SettingsIcon, LayoutTemplate, Droplets, Plus, Palette, FileJson, Image as ImageIcon, Download } from 'lucide-react';
+import { X, Upload, Save, Trash2, User, CreditCard, Building, Settings as SettingsIcon, LayoutTemplate, Droplets, Plus, Palette, FileJson, Image as ImageIcon, Download, Sliders } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface SettingsModalProps {
@@ -21,6 +21,7 @@ interface SettingsModalProps {
   customThemes?: InvoiceTheme[];
   onAddTheme?: (theme: InvoiceTheme) => void;
   onDeleteTheme?: (id: string) => void;
+  onUpdateCustomThemeDetails?: (theme: InvoiceTheme) => void; // New prop for updating existing themes
   customWatermark?: string;
   onUpdateCustomWatermark?: (base64: string) => void;
 }
@@ -45,6 +46,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   customThemes = [],
   onAddTheme,
   onDeleteTheme,
+  onUpdateCustomThemeDetails,
   customWatermark,
   onUpdateCustomWatermark
 }) => {
@@ -64,6 +66,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     font: 'sans',
     colors: { primary: '#3b82f6', accent: '#fbbf24', text: '#1f2937', bg: 'white' }
   });
+
+  // Find the currently active custom theme if it exists
+  const activeCustomTheme = customThemes.find(t => t.id === templateId);
 
   if (!isOpen) return null;
 
@@ -151,11 +156,29 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 bg: 'transparent'
             },
             isCustom: true,
-            backgroundImage: base64
+            backgroundImage: base64,
+            customConfig: {
+                backgroundOpacity: 100,
+                marginTop: 0,
+                marginBottom: 0
+            }
         };
         onAddTheme(themeToSave);
         onUpdateTemplate(themeToSave.id);
     });
+  };
+
+  const updateActiveThemeConfig = (key: keyof NonNullable<InvoiceTheme['customConfig']>, value: number) => {
+    if (activeCustomTheme && onUpdateCustomThemeDetails) {
+        const updatedTheme = {
+            ...activeCustomTheme,
+            customConfig: {
+                ...activeCustomTheme.customConfig,
+                [key]: value
+            }
+        };
+        onUpdateCustomThemeDetails(updatedTheme);
+    }
   };
 
   return (
@@ -219,6 +242,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                    <div>
                      <label className="block text-xs font-medium text-slate-500 mb-1">Website URL</label>
                      <input type="text" className="w-full border p-2 rounded text-sm" value={localSender.website} onChange={e => updateSenderField('website', e.target.value)} />
+                   </div>
+                   <div>
+                     <label className="block text-xs font-medium text-slate-500 mb-1">Company Email</label>
+                     <input type="text" className="w-full border p-2 rounded text-sm" value={localSender.email || ''} onChange={e => updateSenderField('email', e.target.value)} />
                    </div>
                    <div>
                      <label className="block text-xs font-medium text-slate-500 mb-1">Address</label>
@@ -400,6 +427,54 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                               <span className="text-xs font-medium text-center">Create Custom</span>
                            </button>
                       </div>
+
+                      {/* Adjust Active Custom Template */}
+                      {activeCustomTheme && (
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                           <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                             <Sliders size={16} className="text-blue-600"/>
+                             Adjust Selected Template
+                           </h4>
+                           <div className="space-y-4">
+                             <div>
+                               <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                 <span>Background Opacity</span>
+                                 <span>{activeCustomTheme.customConfig?.backgroundOpacity ?? 100}%</span>
+                               </div>
+                               <input 
+                                 type="range" min="0" max="100" 
+                                 value={activeCustomTheme.customConfig?.backgroundOpacity ?? 100}
+                                 onChange={(e) => updateActiveThemeConfig('backgroundOpacity', Number(e.target.value))}
+                                 className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                               />
+                             </div>
+                             <div>
+                               <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                 <span>Content Top Margin</span>
+                                 <span>{activeCustomTheme.customConfig?.marginTop ?? 0} mm</span>
+                               </div>
+                               <input 
+                                 type="range" min="0" max="150" 
+                                 value={activeCustomTheme.customConfig?.marginTop ?? 0}
+                                 onChange={(e) => updateActiveThemeConfig('marginTop', Number(e.target.value))}
+                                 className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                               />
+                             </div>
+                             <div>
+                               <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                 <span>Content Bottom Margin</span>
+                                 <span>{activeCustomTheme.customConfig?.marginBottom ?? 0} mm</span>
+                               </div>
+                               <input 
+                                 type="range" min="0" max="150" 
+                                 value={activeCustomTheme.customConfig?.marginBottom ?? 0}
+                                 onChange={(e) => updateActiveThemeConfig('marginBottom', Number(e.target.value))}
+                                 className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                               />
+                             </div>
+                           </div>
+                        </div>
+                      )}
                       
                       {/* Advanced Actions */}
                       <div className="grid grid-cols-2 gap-3 mt-4">

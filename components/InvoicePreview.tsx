@@ -28,6 +28,11 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
 
   const theme = allThemes[templateId] || DEFAULT_THEMES['classic-blue'];
   
+  // Custom Config Extraction
+  const bgOpacity = theme.customConfig?.backgroundOpacity !== undefined ? theme.customConfig.backgroundOpacity / 100 : 1;
+  const marginTop = theme.customConfig?.marginTop !== undefined ? `${theme.customConfig.marginTop}mm` : undefined;
+  const marginBottom = theme.customConfig?.marginBottom !== undefined ? `${theme.customConfig.marginBottom}mm` : undefined;
+
   // Helpers
   const currencyFormatter = new Intl.NumberFormat('en-IN', {
     style: 'currency',
@@ -82,31 +87,33 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
 
   const Table = ({ transparentHeader = false }: { transparentHeader?: boolean }) => (
     <div className="relative z-10 w-full mb-6">
-      {/* Header */}
-      <div 
-        className={`flex text-xs font-bold py-2 px-4 uppercase tracking-wider ${transparentHeader ? 'border-b-2 border-slate-800' : ''}`}
-        style={{ 
-          backgroundColor: transparentHeader ? 'transparent' : theme.colors.primary, 
-          color: transparentHeader ? theme.colors.text : (theme.colors.headerText || 'white')
-        }}
-      >
-        <div className="w-[10%]">#</div>
-        <div className="w-[50%]">Description</div>
-        <div className="w-[20%] text-right">{isQuotation ? 'Rate' : 'Cost'}</div>
-        <div className="w-[20%] text-right">Amount</div>
-      </div>
-
-      {/* Rows */}
-      <div className="min-h-[200px]">
-        {items.map((item, index) => (
-          <div key={item.id} className="flex text-sm py-3 px-4 border-b border-slate-100 last:border-0" style={{ color: theme.colors.text }}>
-              <div className="w-[10%] opacity-70">{index + 1}</div>
-              <div className="w-[50%] font-medium">{item.description}</div>
-              <div className="w-[20%] text-right">{currencyFormatter.format(item.unitPrice)}</div>
-              <div className="w-[20%] text-right font-bold">{currencyFormatter.format(item.quantity * item.unitPrice)}</div>
-          </div>
-        ))}
-      </div>
+      <table className="w-full text-sm border-collapse border border-slate-300 table-fixed">
+        <thead>
+          <tr 
+            style={{ 
+              backgroundColor: transparentHeader ? 'transparent' : theme.colors.primary, 
+              color: transparentHeader ? theme.colors.text : (theme.colors.headerText || 'white'),
+            }}
+          >
+            <th className="py-3 px-3 border border-slate-300 text-left w-[8%] font-bold uppercase tracking-wider">#</th>
+            <th className="py-3 px-3 border border-slate-300 text-left w-[47%] font-bold uppercase tracking-wider">Description</th>
+            <th className="py-3 px-3 border border-slate-300 text-right w-[10%] font-bold uppercase tracking-wider">Qty</th>
+            <th className="py-3 px-3 border border-slate-300 text-right w-[15%] font-bold uppercase tracking-wider">{isQuotation ? 'Rate' : 'Cost'}</th>
+            <th className="py-3 px-3 border border-slate-300 text-right w-[20%] font-bold uppercase tracking-wider">Amount</th>
+          </tr>
+        </thead>
+        <tbody style={{ color: theme.colors.text }}>
+          {items.map((item, index) => (
+            <tr key={item.id} className="hover:bg-slate-50/50">
+              <td className="py-4 px-3 border border-slate-300 align-top opacity-70">{index + 1}</td>
+              <td className="py-4 px-3 border border-slate-300 align-top font-medium break-words">{item.description}</td>
+              <td className="py-4 px-3 border border-slate-300 align-top text-right whitespace-nowrap opacity-80">{item.quantity}</td>
+              <td className="py-4 px-3 border border-slate-300 align-top text-right whitespace-nowrap opacity-80">{currencyFormatter.format(item.unitPrice)}</td>
+              <td className="py-4 px-3 border border-slate-300 align-top text-right font-bold whitespace-nowrap">{currencyFormatter.format(item.quantity * item.unitPrice)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 
@@ -151,14 +158,14 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
       <div className={containerClass}>
          {/* Background Image if present */}
          {theme.backgroundImage && (
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0" style={{ opacity: bgOpacity }}>
                 <img src={theme.backgroundImage} className="w-full h-full object-cover" alt="" />
             </div>
          )}
          
          <div className="relative z-10 flex w-full h-full flex-grow">
             {/* Sidebar */}
-            <div className="w-[32%] min-h-[297mm] p-8 flex flex-col" style={{ backgroundColor: theme.backgroundImage ? 'rgba(0,0,0,0.8)' : (theme.colors.sidebarBg || theme.colors.primary), color: theme.colors.sidebarText || 'white' }}>
+            <div className="w-[32%] min-h-[297mm] p-8 flex flex-col" style={{ backgroundColor: theme.backgroundImage ? `rgba(0,0,0,${Math.max(0, 0.8 * bgOpacity)})` : (theme.colors.sidebarBg || theme.colors.primary), color: theme.colors.sidebarText || 'white' }}>
                 <div className="mb-12"><Logo className="invert brightness-0" /></div>
                 
                 <div className="mb-8">
@@ -181,7 +188,14 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             </div>
 
             {/* Main Content */}
-            <div className="w-[68%] p-10 flex flex-col relative" style={{ backgroundColor: theme.backgroundImage ? 'rgba(255,255,255,0.95)' : 'transparent' }}>
+            <div 
+                className="w-[68%] p-10 flex flex-col relative" 
+                style={{ 
+                    backgroundColor: theme.backgroundImage ? `rgba(255,255,255,${0.95 * bgOpacity})` : 'transparent',
+                    paddingTop: marginTop,
+                    paddingBottom: marginBottom
+                }}
+            >
                 <div className="flex justify-between items-start mb-12">
                 <div>
                     <h1 className="text-4xl font-bold uppercase tracking-tight text-slate-900 mb-1">{isQuotation ? 'Quotation' : 'Invoice'}</h1>
@@ -222,9 +236,9 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   // If using Minimal Layout
   if (theme.layout === 'minimal') {
     return (
-        <div className={`${containerClass} p-16`}>
+        <div className={`${containerClass} p-16`} style={{ paddingTop: marginTop, paddingBottom: marginBottom }}>
            {theme.backgroundImage && (
-                <div className="absolute inset-0 z-0">
+                <div className="absolute inset-0 z-0" style={{ opacity: bgOpacity }}>
                     <img src={theme.backgroundImage} className="w-full h-full object-cover" alt="" />
                 </div>
             )}
@@ -281,12 +295,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     <div className={containerClass}>
         {/* Background Image if present */}
         {theme.backgroundImage && (
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0" style={{ opacity: bgOpacity }}>
                 <img src={theme.backgroundImage} className="w-full h-full object-cover" alt="" />
             </div>
         )}
 
-        {/* Decorative Header (Waves or Solid Block) - Only show if NO bg image is present OR transparent is needed */}
+        {/* Decorative Header - Only show if NO bg image is present */}
         {!theme.backgroundImage && (
             <div className="absolute top-0 left-0 right-0 h-40 z-0 pointer-events-none" style={{ fill: theme.colors.primary }}>
                 {theme.id.includes('classic') ? (
@@ -300,7 +314,14 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             </div>
         )}
 
-        <div className="relative z-10 px-12 pt-16 flex-grow flex flex-col">
+        {/* Main Content Area with Dynamic Padding */}
+        <div 
+            className="relative z-10 px-12 pt-16 flex-grow flex flex-col"
+            style={{ 
+                paddingTop: marginTop,
+                paddingBottom: marginBottom
+            }}
+        >
             <div className="flex justify-between items-start mb-12">
                <div>
                   <h1 className="text-5xl mb-2 uppercase tracking-wide font-bold" style={{ color: theme.colors.text }}>
