@@ -1,17 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { InvoiceData } from '../types';
+import React, { useState } from 'react';
+import { InvoiceData, InvoiceTheme, DEFAULT_THEMES } from '../types';
 
 interface InvoicePreviewProps {
   data: InvoiceData;
+  logoSrc?: string;
+  templateId?: string;
+  showWatermark?: boolean;
+  customThemes?: InvoiceTheme[];
 }
 
-const InvoicePreview: React.FC<InvoicePreviewProps> = ({ data }) => {
-  const subtotal = data.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
-  const total = subtotal;
-  
-  // Use a stable timestamp for cache busting this session
+const InvoicePreview: React.FC<InvoicePreviewProps> = ({ 
+  data, 
+  logoSrc, 
+  templateId = 'classic-blue',
+  showWatermark = false,
+  customThemes = []
+}) => {
   const [timestamp] = useState(Date.now());
+  
+  // Merge default themes with custom ones to find the active theme
+  const allThemes = { ...DEFAULT_THEMES };
+  customThemes.forEach(t => {
+    allThemes[t.id] = t;
+  });
 
+  const theme = allThemes[templateId] || DEFAULT_THEMES['classic-blue'];
+  
+  // Helpers
   const currencyFormatter = new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -19,211 +34,288 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ data }) => {
     maximumFractionDigits: 0,
   });
 
-  // Colors based on screenshot
-  const theme = {
-    blue: '#0e3a5d', // Deep Navy Blue
-    gold: '#fcd34d', // Light Gold/Yellow
-    text: '#1f2937', // Slate 800
+  const subtotal = data.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
+  const total = subtotal;
+  const isQuotation = data.type === 'quotation';
+  const { sender, client, items } = data;
+
+  const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase();
+
+  // --- Subcomponents for Rendering ---
+
+  const Logo = ({ className }: { className?: string }) => (
+    <div className={className}>
+      <img 
+        src={logoSrc || `/logo.png?t=${timestamp}`}
+        alt="Logo" 
+        className="h-20 w-auto object-contain"
+        onError={(e) => {
+           e.currentTarget.style.display = 'none';
+           document.getElementById(`fallback-${templateId}`)?.classList.remove('hidden');
+        }}
+      />
+      <div id={`fallback-${templateId}`} className="hidden font-bold text-2xl tracking-tighter border-2 border-current px-2 py-1 inline-block">
+        {sender.name.substring(0,2).toUpperCase()}
+      </div>
+    </div>
+  );
+
+  const Watermark = () => {
+    if (!showWatermark) return null;
+    return (
+       <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.05] z-0 overflow-hidden">
+         {logoSrc ? (
+            <img src={logoSrc} className="w-3/4 max-w-[500px] grayscale" />
+         ) : (
+            <svg width="400" height="400" viewBox="0 0 100 100" fill={theme.colors.primary}>
+               <path d="M50 15 L85 75 H15 L50 15Z" stroke={theme.colors.primary} strokeWidth="5" fill="none" />
+               <text x="50" y="50" textAnchor="middle" fontSize="10" fill={theme.colors.primary}>INVOICE</text>
+            </svg>
+         )}
+       </div>
+    );
   };
 
-  const isQuotation = data.type === 'quotation';
-
-  return (
-    <div className="bg-white shadow-2xl w-[210mm] min-h-[297mm] mx-auto relative flex flex-col font-sans text-slate-900 overflow-hidden print-exact-a4">
-      
-      {/* --- TOP WAVES SVG --- */}
-      <div className="absolute top-0 left-0 right-0 h-40 z-0 pointer-events-none">
-        <svg viewBox="0 0 794 160" preserveAspectRatio="none" className="w-full h-full">
-           <defs>
-             <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-               <stop offset="0%" stopColor="#fbbf24" />
-               <stop offset="100%" stopColor="#fde68a" />
-             </linearGradient>
-           </defs>
-           {/* Gold Wave (Back) */}
-           <path d="M0,0 L794,0 L794,40 C600,100 200,60 0,120 Z" fill="url(#goldGradient)" opacity="0.4" />
-           {/* Blue Wave (Front) */}
-           <path d="M0,0 L794,0 L794,20 C500,60 300,60 0,40 Z" fill={theme.blue} />
-           {/* Secondary thin gold line accent */}
-           <path d="M0,40 C300,60 500,60 794,20 L794,25 C500,65 300,65 0,45 Z" fill="#fbbf24" />
-        </svg>
+  const Table = ({ transparentHeader = false }: { transparentHeader?: boolean }) => (
+    <div className="relative z-10 w-full mb-6">
+      {/* Header */}
+      <div 
+        className={`flex text-xs font-bold py-2 px-4 uppercase tracking-wider ${transparentHeader ? 'border-b-2 border-slate-800' : ''}`}
+        style={{ 
+          backgroundColor: transparentHeader ? 'transparent' : theme.colors.primary, 
+          color: transparentHeader ? theme.colors.text : (theme.colors.headerText || 'white')
+        }}
+      >
+        <div className="w-[10%]">#</div>
+        <div className="w-[50%]">Description</div>
+        <div className="w-[20%] text-right">{isQuotation ? 'Rate' : 'Cost'}</div>
+        <div className="w-[20%] text-right">Amount</div>
       </div>
 
-      <div className="relative z-10 px-12 pt-24 flex-grow flex flex-col">
+      {/* Rows */}
+      <div className="min-h-[200px]">
+        {items.map((item, index) => (
+          <div key={item.id} className="flex text-sm py-3 px-4 border-b border-slate-100 last:border-0" style={{ color: theme.colors.text }}>
+              <div className="w-[10%] opacity-70">{index + 1}</div>
+              <div className="w-[50%] font-medium">{item.description}</div>
+              <div className="w-[20%] text-right">{currencyFormatter.format(item.unitPrice)}</div>
+              <div className="w-[20%] text-right font-bold">{currencyFormatter.format(item.quantity * item.unitPrice)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const Totals = () => (
+    <div className="w-full">
+       <div className="flex justify-between py-2 border-b border-slate-200">
+          <span className="text-slate-500 text-sm">Subtotal</span>
+          <span className="font-medium">{currencyFormatter.format(subtotal)}</span>
+       </div>
+       <div 
+         className="flex justify-between py-3 mt-2 font-bold text-lg"
+         style={{ color: theme.colors.primary }}
+       >
+          <span>TOTAL</span>
+          <span>{currencyFormatter.format(total)}</span>
+       </div>
+    </div>
+  );
+
+  const PaymentInfo = () => (
+    <div className="text-sm space-y-1" style={{ color: theme.colors.text }}>
+        <p className="font-bold text-xs uppercase mb-2 opacity-70">Payment Details</p>
+        <div className="grid grid-cols-[80px_1fr] gap-x-2">
+            {sender.accountName && <><span className="opacity-60">Name:</span> <span>{sender.accountName}</span></>}
+            {sender.accountNumber && <><span className="opacity-60">Acc No:</span> <span>{sender.accountNumber}</span></>}
+            {sender.ifsCode && <><span className="opacity-60">IFSC:</span> <span>{sender.ifsCode}</span></>}
+            {sender.branch && <><span className="opacity-60">Branch:</span> <span>{sender.branch}</span></>}
+            {sender.pan && <><span className="opacity-60">PAN:</span> <span>{sender.pan}</span></>}
+        </div>
+    </div>
+  );
+
+
+  // --- LAYOUTS ---
+
+  // 1. STANDARD LAYOUT (Classic Waves/Header)
+  if (theme.layout === 'standard') {
+    return (
+      <div className={`bg-white shadow-2xl w-[210mm] min-h-[297mm] mx-auto relative flex flex-col overflow-hidden print-exact-a4 ${theme.font === 'serif' ? 'font-serif' : theme.font === 'mono' ? 'font-mono' : 'font-sans'}`}>
         
-        {/* --- HEADER CONTENT --- */}
-        <div className="flex justify-between items-start mb-10">
-          <div>
-            <h1 className="text-4xl font-serif text-black mb-2 tracking-wide uppercase">
-              {isQuotation ? 'QUOTATION' : 'INVOICE'}
-            </h1>
-            <div className="text-sm text-slate-700 font-medium leading-relaxed">
-              <p>{isQuotation ? 'Quotation' : 'Invoice'} Number: {data.invoiceNumber}</p>
-              <p>Date: {new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}</p>
-            </div>
-          </div>
-          
-          {/* Logo */}
-          <div className="mt-2">
-             <img 
-               src={`/logo.png?t=${timestamp}`}
-               alt="Adversity Solutions" 
-               className="h-24 w-auto object-contain"
-               onError={(e) => {
-                 // If the PNG fails, hide the img and show the fallback div
-                 e.currentTarget.style.display = 'none';
-                 const fallback = document.getElementById('logo-fallback');
-                 if (fallback) fallback.classList.remove('hidden');
-               }}
-             />
-             
-             {/* Fallback Logo (Hidden unless img fails) */}
-             <div id="logo-fallback" className="hidden flex items-center gap-3">
-               <div className="relative w-10 h-10">
-                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M50 10 L90 80 H10 L50 10Z" fill="#fbbf24" rx="10" stroke="#fbbf24" strokeWidth="8" strokeLinejoin="round" />
-                    <circle cx="25" cy="80" r="12" fill="#fbbf24" />
-                    <circle cx="75" cy="80" r="12" fill="#fbbf24" />
-                    <circle cx="50" cy="25" r="12" fill="#fbbf24" />
-                  </svg>
-               </div>
-               <div className="flex flex-col">
-                  <span className="text-2xl font-extrabold text-slate-900 leading-none">ADVERSITY</span>
-               </div>
-             </div>
-          </div>
+        {/* Decorative Header (Waves or Solid Block) */}
+        <div className="absolute top-0 left-0 right-0 h-40 z-0 pointer-events-none" style={{ fill: theme.colors.primary }}>
+            {theme.id.includes('classic') ? (
+               <svg viewBox="0 0 794 160" preserveAspectRatio="none" className="w-full h-full">
+                 <path d="M0,0 L794,0 L794,40 C600,100 200,60 0,120 Z" fill={theme.colors.accent} opacity="0.4" />
+                 <path d="M0,0 L794,0 L794,20 C500,60 300,60 0,40 Z" fill={theme.colors.primary} />
+               </svg>
+            ) : (
+               <div className="w-full h-32" style={{ backgroundColor: theme.colors.primary }}></div>
+            )}
         </div>
 
-        {/* --- ADDRESS SECTION --- */}
-        <div className="flex justify-between items-start mb-8 gap-8">
-           {/* BILL TO */}
-           <div className="flex-1">
-              <h3 className="font-bold text-slate-900 uppercase text-sm mb-2">
-                 {isQuotation ? 'QUOTATION TO:' : 'BILL TO:'}
-              </h3>
-              {data.client ? (
-                <div className="text-sm text-slate-800 leading-snug space-y-1">
-                   <p className="font-semibold">{data.client.name}</p>
-                   <p className="whitespace-pre-line text-slate-600">{data.client.address}</p>
-                   {data.client.gstin && <p>GSTIN: {data.client.gstin}</p>}
-                </div>
-              ) : (
-                <p className="text-slate-400 text-sm italic">Select a client...</p>
-              )}
-           </div>
-
-           {/* FROM */}
-           <div className="flex-1">
-              <h3 className="font-bold text-slate-900 uppercase text-sm mb-2">FROM:</h3>
-              <div className="text-sm text-slate-800 leading-snug space-y-1">
-                 <p className="font-semibold">{data.sender.name}</p>
-                 <p className="uppercase whitespace-pre-line text-slate-600">{data.sender.address}</p>
-              </div>
-           </div>
-        </div>
-
-        {/* --- TABLE SECTION --- */}
-        <div className="mb-6 relative min-h-[350px]">
-          
-          {/* Watermark Logo in center */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.07] z-0">
-              <svg width="300" height="300" viewBox="0 0 100 100" fill="#fbbf24">
-                  <path d="M50 15 L85 75 H15 L50 15Z" stroke="#fbbf24" strokeWidth="15" strokeLinejoin="round" />
-              </svg>
-          </div>
-
-          <div className="relative z-10 border border-slate-900">
-             {/* Header */}
-             <div className="bg-[#0e3a5d] text-white flex text-sm font-bold py-2.5 px-4 uppercase tracking-wider">
-                <div className="w-[10%]">ITEM</div>
-                <div className="w-[50%]">DESCRIPTION</div>
-                <div className="w-[20%] text-right">{isQuotation ? 'RATE' : 'COST'}</div>
-                <div className="w-[20%] text-right">AMOUNT</div>
-             </div>
-
-             {/* Rows */}
-             <div className="bg-white min-h-[300px]">
-               {data.items.map((item, index) => (
-                  <div key={item.id} className="flex text-sm text-slate-800 py-4 px-4">
-                     <div className="w-[10%] font-medium">{index + 1}.</div>
-                     <div className="w-[50%] font-medium">{item.description}</div>
-                     <div className="w-[20%] text-right font-medium">
-                        {isQuotation ? `${currencyFormatter.format(item.unitPrice).replace('₹', '₹')} / V` : currencyFormatter.format(item.unitPrice).replace('₹', '₹')}
-                     </div>
-                     <div className="w-[20%] text-right font-bold">{currencyFormatter.format(item.quantity * item.unitPrice).replace('₹', '₹')}</div>
+        <div className="relative z-10 px-12 pt-16 flex-grow flex flex-col">
+            <div className="flex justify-between items-start mb-12">
+               <div>
+                  <h1 className="text-5xl mb-2 uppercase tracking-wide font-bold" style={{ color: theme.colors.text }}>
+                    {isQuotation ? 'Quotation' : 'Invoice'}
+                  </h1>
+                  <div className="text-sm font-medium opacity-70">
+                     <p># {data.invoiceNumber}</p>
+                     <p>Date: {formatDate(data.date)}</p>
                   </div>
-               ))}
-             </div>
-          </div>
-        </div>
+               </div>
+               <div className="mt-4"><Logo /></div>
+            </div>
 
-        {/* --- FOOTER CONTENT --- */}
-        <div className="mt-auto relative z-10 pb-20">
-           <div className="flex justify-between items-start">
-              
-              {/* Payment Info / Terms */}
-              {isQuotation ? (
-                 <div className="w-[55%] text-sm text-slate-900">
-                     <h3 className="font-bold text-slate-900 uppercase mb-2">Terms & Conditions</h3>
-                     <div className="space-y-1 font-medium text-slate-800 text-sm">
-                        <p>1. 50% Advance</p>
-                        <p>2. 50% Post Completion of work</p>
+            <div className="flex justify-between items-start mb-10 gap-8">
+               <div className="flex-1">
+                  <h3 className="font-bold text-xs uppercase mb-2 opacity-60">Bill To</h3>
+                  {client ? (
+                     <div className="text-sm font-medium leading-relaxed">
+                        <p className="text-lg mb-1">{client.name}</p>
+                        <p className="whitespace-pre-line opacity-80">{client.address}</p>
+                        {client.gstin && <p className="mt-1 text-xs">GSTIN: {client.gstin}</p>}
                      </div>
-                 </div>
-              ) : (
-                 <div className="w-[55%] text-sm text-slate-900">
-                    <h3 className="font-bold text-slate-900 uppercase mb-2">PAYMENT INFORMATION:</h3>
-                    <div className="space-y-1 font-semibold text-slate-800">
-                        <div className="flex"><span className="w-24">Name:</span> <span>{data.sender.accountName}</span></div>
-                        <div className="flex"><span className="w-24">Account:</span> <span>{data.sender.accountNumber}</span></div>
-                        <div className="flex"><span className="w-24">PAN:</span> <span>{data.sender.pan}</span></div>
-                        <div className="flex"><span className="w-24">Branch:</span> <span>{data.sender.branch}</span></div>
-                        <div className="flex"><span className="w-24">IFS code:</span> <span>{data.sender.ifsCode}</span></div>
-                        <div className="flex"><span className="w-24">Mobile No:</span> <span>{data.sender.mobile}</span></div>
-                    </div>
-                 </div>
-              )}
+                  ) : <p className="italic text-slate-400">Select Client...</p>}
+               </div>
+               <div className="flex-1 text-right">
+                  <h3 className="font-bold text-xs uppercase mb-2 opacity-60">From</h3>
+                  <div className="text-sm font-medium leading-relaxed">
+                     <p className="text-lg mb-1">{sender.name}</p>
+                     <p className="whitespace-pre-line opacity-80">{sender.address}</p>
+                     <p className="mt-1">{sender.website}</p>
+                  </div>
+               </div>
+            </div>
 
-              {/* Totals */}
-              <div className="w-[40%]">
-                 <div className="border border-slate-900 flex justify-between items-center p-3 mb-2 bg-white">
-                    <span className="text-slate-600 font-medium text-sm">Sub Total:</span>
-                    <span className="font-medium text-slate-800">{currencyFormatter.format(subtotal).replace('₹', '₹ ')}</span>
-                 </div>
-                 <div className="bg-[#0e3a5d] text-white flex justify-between items-center p-3">
-                    <span className="font-bold text-lg uppercase tracking-wider font-serif">TOTAL:</span>
-                    <span className="font-bold text-lg font-serif">{currencyFormatter.format(total).replace('₹', '₹ ')}/-</span>
-                 </div>
-              </div>
-           </div>
-        </div>
-        
-        {/* Bottom Text */}
-        <div className="absolute bottom-6 left-12 text-[10px] text-slate-500 italic z-20">
-           *not registered under gst
-        </div>
-        
-        <div className="absolute bottom-6 left-0 right-0 text-center z-20">
-            <div className="flex items-center justify-center gap-1 text-[10px] text-slate-400">
-               <span>🌐</span>
-               <span>{data.sender.website}</span>
+            <div className="relative min-h-[400px]">
+               <Watermark />
+               <Table />
+            </div>
+
+            <div className="mt-auto pb-16 flex justify-between items-end">
+               <div className="w-[50%]"><PaymentInfo /></div>
+               <div className="w-[40%]"><Totals /></div>
             </div>
         </div>
 
+        {/* Footer Wave/Bar */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 z-0" style={{ backgroundColor: theme.colors.primary }}></div>
       </div>
+    );
+  }
 
-      {/* --- BOTTOM WAVES SVG --- */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 z-0 pointer-events-none">
-        <svg viewBox="0 0 794 120" preserveAspectRatio="none" className="w-full h-full">
-           {/* Gold Wave (Back) */}
-           <path d="M0,120 L794,120 L794,20 C500,100 300,0 0,60 Z" fill="#fde68a" opacity="0.5" />
-           {/* Blue Wave (Bottom-most) */}
-           <path d="M0,120 L794,120 L794,80 C500,120 200,80 0,100 Z" fill={theme.blue} />
-           {/* Gold Accent */}
-           <path d="M0,100 C200,80 500,120 794,80 L794,90 C500,130 200,90 0,110 Z" fill="#fbbf24" />
-        </svg>
+  // 2. SIDEBAR LAYOUT
+  if (theme.layout === 'sidebar') {
+    return (
+      <div className={`bg-white shadow-2xl w-[210mm] min-h-[297mm] mx-auto flex overflow-hidden print-exact-a4 text-slate-800 ${theme.font === 'serif' ? 'font-serif' : theme.font === 'mono' ? 'font-mono' : 'font-sans'}`}>
+         {/* Sidebar */}
+         <div className="w-[32%] h-full p-8 flex flex-col" style={{ backgroundColor: theme.colors.sidebarBg || theme.colors.primary, color: theme.colors.sidebarText || 'white' }}>
+            <div className="mb-12"><Logo className="invert brightness-0" /></div>
+            
+            <div className="mb-8">
+               <h3 className="text-xs font-bold uppercase tracking-widest mb-4 opacity-70 border-b border-white/20 pb-2">From</h3>
+               <p className="font-bold text-lg leading-tight mb-2">{sender.name}</p>
+               <p className="text-sm whitespace-pre-line opacity-80">{sender.address}</p>
+               <p className="text-sm mt-4 opacity-80">{sender.email}</p>
+               <p className="text-sm opacity-80">{sender.website}</p>
+               <p className="text-sm opacity-80">{sender.mobile}</p>
+            </div>
+
+            <div className="mt-auto">
+               <h3 className="text-xs font-bold uppercase tracking-widest mb-4 opacity-70 border-b border-white/20 pb-2">Bank Details</h3>
+               <div className="text-sm space-y-2 opacity-90">
+                  <p>{sender.accountName}</p>
+                  <p>{sender.accountNumber}</p>
+                  <p>{sender.ifsCode}</p>
+               </div>
+            </div>
+         </div>
+
+         {/* Main Content */}
+         <div className="w-[68%] p-10 flex flex-col relative">
+            <div className="flex justify-between items-start mb-12">
+               <div>
+                  <h1 className="text-4xl font-bold uppercase tracking-tight text-slate-900 mb-1">{isQuotation ? 'Quotation' : 'Invoice'}</h1>
+                  <span className="text-slate-400 text-sm"># {data.invoiceNumber}</span>
+               </div>
+               <div className="text-right">
+                  <p className="text-sm text-slate-500">Date</p>
+                  <p className="font-medium">{formatDate(data.date)}</p>
+               </div>
+            </div>
+
+            <div className="mb-10">
+               <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Bill To</h3>
+               {client ? (
+                  <div>
+                     <p className="text-xl font-bold text-slate-800">{client.name}</p>
+                     <p className="text-sm text-slate-600 whitespace-pre-line mt-1">{client.address}</p>
+                  </div>
+               ) : <span className="text-slate-300">Select Client</span>}
+            </div>
+
+            <div className="relative flex-grow">
+               <Watermark />
+               <Table />
+            </div>
+
+            <div className="mt-8 pt-8 border-t border-slate-200">
+               <div className="w-1/2 ml-auto">
+                  <Totals />
+               </div>
+            </div>
+         </div>
       </div>
+    );
+  }
 
+  // 3. MINIMAL LAYOUT
+  return (
+    <div className={`bg-white shadow-2xl w-[210mm] min-h-[297mm] mx-auto relative flex flex-col p-16 overflow-hidden print-exact-a4 ${theme.font === 'serif' ? 'font-serif' : theme.font === 'mono' ? 'font-mono' : 'font-sans'}`}>
+       <div className="text-center mb-12 border-b-2 border-slate-900 pb-8" style={{ borderColor: theme.colors.primary }}>
+          <Logo className="h-16 w-auto mx-auto mb-4" />
+          <h1 className="text-3xl font-bold uppercase tracking-widest" style={{ color: theme.colors.primary }}>{sender.name}</h1>
+          <p className="text-xs mt-2 uppercase tracking-wider">{sender.website} • {sender.mobile}</p>
+       </div>
+
+       <div className="flex justify-between items-end mb-16">
+          <div>
+             <h2 className="text-4xl font-bold" style={{ color: theme.colors.text }}>{isQuotation ? 'QUOTATION' : 'INVOICE'}</h2>
+             <p className="text-sm mt-1"># {data.invoiceNumber} • {formatDate(data.date)}</p>
+          </div>
+          <div className="text-right max-w-[250px]">
+             <p className="text-xs uppercase font-bold mb-1">Bill To:</p>
+             {client && (
+               <>
+                 <p className="font-bold">{client.name}</p>
+                 <p className="text-xs whitespace-pre-line">{client.address}</p>
+               </>
+             )}
+          </div>
+       </div>
+
+       <div className="relative flex-grow">
+          <Watermark />
+          <Table transparentHeader={true} />
+       </div>
+
+       <div className="flex justify-between items-start mt-8 pt-8 border-t-2 border-slate-900" style={{ borderColor: theme.colors.primary }}>
+          <div className="w-1/2 text-xs">
+             <p className="font-bold uppercase mb-2">Payment Info:</p>
+             <p>{sender.accountName}</p>
+             <p>{sender.accountNumber} • {sender.ifsCode}</p>
+             <p>{sender.branch}</p>
+          </div>
+          <div className="w-1/3 text-right">
+             <div className="flex justify-between text-lg font-bold">
+               <span>Total</span>
+               <span>{currencyFormatter.format(total)}</span>
+             </div>
+          </div>
+       </div>
     </div>
   );
 };

@@ -4,12 +4,15 @@ import {
   DEFAULT_SENDER, 
   LineItem,
   Client,
-  MOCK_CLIENTS
+  MOCK_CLIENTS,
+  SenderDetails,
+  InvoiceTheme
 } from './types';
 import ClientSelector from './components/ClientSelector';
 import InvoicePreview from './components/InvoicePreview';
 import SmartInput from './components/SmartInput';
-import { Plus, Trash2, Printer, Eye, Edit, ArrowLeft, FileText } from 'lucide-react';
+import SettingsModal from './components/SettingsModal';
+import { Plus, Trash2, Printer, Eye, Edit, ArrowLeft, FileText, Settings as SettingsIcon, Mail } from 'lucide-react';
 
 const App: React.FC = () => {
   // Load clients from local storage or use mocks
@@ -22,25 +25,92 @@ const App: React.FC = () => {
     }
   });
 
-  // Save clients to local storage whenever the list changes
-  useEffect(() => {
-    localStorage.setItem('invoicify_clients', JSON.stringify(clients));
-  }, [clients]);
+  // Load Sender Details from local storage
+  const [senderDetails, setSenderDetails] = useState<SenderDetails>(() => {
+    try {
+      const saved = localStorage.getItem('invoicify_sender');
+      return saved ? JSON.parse(saved) : DEFAULT_SENDER;
+    } catch {
+      return DEFAULT_SENDER;
+    }
+  });
+
+  // Load Logo from local storage (Base64)
+  const [customLogo, setCustomLogo] = useState<string | undefined>(() => {
+    return localStorage.getItem('invoicify_logo') || undefined;
+  });
+
+  // Load Invoice Prefix
+  const [invoicePrefix, setInvoicePrefix] = useState<string>(() => {
+    return localStorage.getItem('invoicify_prefix') || 'AS';
+  });
+
+  // Load Template ID
+  const [templateId, setTemplateId] = useState<string>(() => {
+    return localStorage.getItem('invoicify_template') || 'classic-blue';
+  });
+
+  // Load Custom Templates
+  const [customThemes, setCustomThemes] = useState<InvoiceTheme[]>(() => {
+    try {
+      const saved = localStorage.getItem('invoicify_custom_themes');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Load Watermark setting
+  const [showWatermark, setShowWatermark] = useState<boolean>(() => {
+    return localStorage.getItem('invoicify_watermark') === 'true';
+  });
 
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     type: 'invoice',
-    invoiceNumber: 'AS00125',
-    date: '2025-12-25', // Matches screenshot example
+    invoiceNumber: `${invoicePrefix}00125`,
+    date: new Date().toISOString().split('T')[0],
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    sender: DEFAULT_SENDER,
+    sender: senderDetails,
     client: null,
     items: [
-      { id: '1', description: 'Shopify Platform Fee - December', quantity: 1, unitPrice: 2354.00 }
+      { id: '1', description: 'Consulting Services', quantity: 1, unitPrice: 0 }
     ],
     notes: ''
   });
 
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Persistence Effects
+  useEffect(() => {
+    localStorage.setItem('invoicify_clients', JSON.stringify(clients));
+  }, [clients]);
+
+  useEffect(() => {
+    localStorage.setItem('invoicify_sender', JSON.stringify(senderDetails));
+    setInvoiceData(prev => ({ ...prev, sender: senderDetails }));
+  }, [senderDetails]);
+
+  useEffect(() => {
+    if (customLogo) localStorage.setItem('invoicify_logo', customLogo);
+    else localStorage.removeItem('invoicify_logo');
+  }, [customLogo]);
+
+  useEffect(() => {
+    localStorage.setItem('invoicify_prefix', invoicePrefix);
+  }, [invoicePrefix]);
+
+  useEffect(() => {
+    localStorage.setItem('invoicify_template', templateId);
+  }, [templateId]);
+
+  useEffect(() => {
+    localStorage.setItem('invoicify_custom_themes', JSON.stringify(customThemes));
+  }, [customThemes]);
+
+  useEffect(() => {
+    localStorage.setItem('invoicify_watermark', String(showWatermark));
+  }, [showWatermark]);
 
   const addItem = () => {
     const newItem: LineItem = {
@@ -87,12 +157,66 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDeleteClient = (id: string) => {
+    setClients(prev => prev.filter(c => c.id !== id));
+    if (invoiceData.client?.id === id) {
+      setInvoiceData(prev => ({ ...prev, client: null }));
+    }
+  };
+
+  const handleAddTheme = (theme: InvoiceTheme) => {
+    setCustomThemes(prev => [...prev, theme]);
+  };
+
+  const handleDeleteTheme = (id: string) => {
+    setCustomThemes(prev => prev.filter(t => t.id !== id));
+    if (templateId === id) {
+       setTemplateId('classic-blue');
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
 
+  const handleEmail = () => {
+    if (!invoiceData.client?.email) {
+       alert("Please select a client with an email address first.");
+       return;
+    }
+    const total = invoiceData.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
+    const docName = invoiceData.type === 'invoice' ? 'Invoice' : 'Quotation';
+    const subject = `${docName} ${invoiceData.invoiceNumber} from ${invoiceData.sender.name}`;
+    const body = `Dear ${invoiceData.client.name},\n\nPlease find attached the ${docName.toLowerCase()} #${invoiceData.invoiceNumber}.\n\nTotal Amount: ${total.toLocaleString('en-IN', {style: 'currency', currency: 'INR'})}\n\nRegards,\n${invoiceData.sender.name}`;
+    
+    // Alert user about attachment limitation
+    if(window.confirm(`Opening email draft to ${invoiceData.client.email}.\n\nNOTE: You must manually attach the PDF after printing/saving it.`)) {
+        window.open(`mailto:${invoiceData.client.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    }
+  };
+
   return (
     <>
+      <SettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        senderDetails={senderDetails}
+        onUpdateSender={setSenderDetails}
+        logo={customLogo}
+        onUpdateLogo={setCustomLogo}
+        invoicePrefix={invoicePrefix}
+        onUpdatePrefix={setInvoicePrefix}
+        clients={clients}
+        onDeleteClient={handleDeleteClient}
+        templateId={templateId}
+        onUpdateTemplate={setTemplateId}
+        showWatermark={showWatermark}
+        onToggleWatermark={setShowWatermark}
+        customThemes={customThemes}
+        onAddTheme={handleAddTheme}
+        onDeleteTheme={handleDeleteTheme}
+      />
+
       {/* SCREEN LAYOUT (Hidden during print) */}
       <div className="min-h-screen flex flex-col md:flex-row font-sans print:hidden">
         {/* Editor Panel (Left) */}
@@ -120,11 +244,30 @@ const App: React.FC = () => {
           </div>
 
           <div className="p-6 pb-20">
-            <div className="mb-8 hidden md:block">
-              <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                 Invoicify
-              </h1>
-              <p className="text-slate-500 text-sm mt-1">Generate standard invoices</p>
+            <div className="mb-8 hidden md:block flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                   Invoicify
+                </h1>
+                <p className="text-slate-500 text-sm mt-1">Generate standard invoices</p>
+              </div>
+              <button 
+                onClick={() => setIsSettingsOpen(true)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                title="Settings"
+              >
+                <SettingsIcon size={20} />
+              </button>
+            </div>
+            
+            <div className="md:hidden mb-6 flex justify-end">
+               <button 
+                onClick={() => setIsSettingsOpen(true)}
+                className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-100 px-3 py-2 rounded-lg"
+              >
+                <SettingsIcon size={16} />
+                <span>Config</span>
+              </button>
             </div>
 
             <section className="mb-8">
@@ -176,7 +319,7 @@ const App: React.FC = () => {
                         />
                       </div>
                       <div className="w-1/3">
-                        <label className="block text-xs font-medium text-slate-500 mb-1">Cost (Price)</label>
+                        <label className="block text-xs font-medium text-slate-500 mb-1">Cost</label>
                         <input
                           type="number"
                           inputMode="decimal"
@@ -276,6 +419,13 @@ const App: React.FC = () => {
              {/* Action Buttons */}
              <div className="pointer-events-auto flex space-x-3">
                 <button 
+                  onClick={handleEmail}
+                  className="bg-white text-slate-700 px-5 py-2.5 rounded-full shadow-lg border border-slate-200 hover:bg-slate-50 transition-all flex items-center space-x-2 font-medium active:scale-95"
+                >
+                  <Mail size={18} />
+                  <span>Email Client</span>
+                </button>
+                <button 
                   onClick={handlePrint}
                   className="bg-slate-900 text-white px-5 py-2.5 rounded-full shadow-lg hover:bg-slate-800 hover:shadow-xl transition-all flex items-center space-x-2 font-medium active:scale-95"
                 >
@@ -288,7 +438,13 @@ const App: React.FC = () => {
           <div className="p-2 md:p-8 lg:p-12 flex justify-center items-start min-h-full overflow-hidden pb-20">
              {/* Responsive Scaling for Visual Preview */}
              <div className="transform scale-[0.42] sm:scale-[0.6] md:scale-[0.85] lg:scale-100 origin-top shadow-2xl transition-transform duration-300 bg-white">
-                <InvoicePreview data={invoiceData} />
+                <InvoicePreview 
+                  data={invoiceData} 
+                  logoSrc={customLogo} 
+                  templateId={templateId}
+                  showWatermark={showWatermark}
+                  customThemes={customThemes}
+                />
              </div>
           </div>
         </div>
@@ -298,7 +454,13 @@ const App: React.FC = () => {
           This renders a clean, unscaled version at the document root for perfect PDF generation.
       */}
       <div className="hidden print:block print:w-full print:h-auto print:overflow-visible">
-        <InvoicePreview data={invoiceData} />
+        <InvoicePreview 
+          data={invoiceData} 
+          logoSrc={customLogo} 
+          templateId={templateId}
+          showWatermark={showWatermark}
+          customThemes={customThemes}
+        />
       </div>
     </>
   );
