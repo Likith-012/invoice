@@ -649,10 +649,11 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
         OFF-SCREEN EXPORT CONTAINER
         Positioned off-screen to remain in DOM for html2canvas but invisible to user.
         Fixed width ensures consistency on mobile.
-        Fixed height ensures 1 page by default unless content pushes it.
+        Fixed height ensures 1 page by default (296mm to account for pixel rounding issues vs 297mm A4).
+        Overflow hidden cuts off any slight spillover to prevent page 2.
       */}
       <div style={{ position: 'fixed', left: '-9999px', top: 0, width: '210mm' }}>
-        <div ref={exportRef} className="w-[210mm] min-h-[297mm] bg-white">
+        <div ref={exportRef} className="w-[210mm] h-[296mm] bg-white overflow-hidden">
             <InvoicePreview 
                 data={invoiceData} 
                 logoSrc={customLogo} 

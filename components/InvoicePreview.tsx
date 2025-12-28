@@ -138,34 +138,33 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   );
 
   const ReferenceTable = () => (
-    <div className="relative z-10 w-full mb-8">
+    <div className="relative z-10 w-full mb-6">
       {/* Table Header */}
       <div className="flex w-full" style={{ backgroundColor: theme.colors.primary, color: 'white' }}>
-          <div className="py-3 px-6 text-left w-[15%] font-serif font-bold uppercase tracking-widest text-sm">Item</div>
-          <div className="py-3 px-6 text-left w-[60%] font-serif font-bold uppercase tracking-widest text-sm">Description</div>
-          <div className="py-3 px-6 text-right w-[25%] font-serif font-bold uppercase tracking-widest text-sm">Amount</div>
+          <div className="py-2.5 px-4 text-left w-[15%] font-serif font-bold uppercase tracking-widest text-xs">Item</div>
+          <div className="py-2.5 px-4 text-left w-[60%] font-serif font-bold uppercase tracking-widest text-xs">Description</div>
+          <div className="py-2.5 px-4 text-right w-[25%] font-serif font-bold uppercase tracking-widest text-xs">Amount</div>
       </div>
       
       {/* Table Body */}
       <div className="border-x-2 border-b-2 border-slate-900 bg-white/50 relative">
           {items.map((item, index) => (
             <div key={item.id} className="flex w-full border-b border-slate-400 last:border-0">
-               <div className="py-4 px-6 w-[15%] text-slate-800 font-medium text-center">{index + 1}.</div>
-               <div className="py-4 px-6 w-[60%] text-slate-800 font-medium whitespace-pre-wrap">{item.description}</div>
-               <div className="py-4 px-6 w-[25%] text-right font-bold text-slate-900">
+               <div className="py-3 px-4 w-[15%] text-slate-800 font-medium text-center text-sm">{index + 1}.</div>
+               <div className="py-3 px-4 w-[60%] text-slate-800 font-medium whitespace-pre-wrap text-sm">{item.description}</div>
+               <div className="py-3 px-4 w-[25%] text-right font-bold text-slate-900 text-sm">
                   {currencyFormatter.format(item.quantity * item.unitPrice).replace('₹', '₹ ')}
                </div>
             </div>
           ))}
-          {/* Spacer to give height if few items */}
-          {items.length < 3 && <div className="h-32"></div>}
+          {/* Removed fixed height spacer to allow content to collapse naturally and fit on page */}
       </div>
     </div>
   );
 
   // --- MAIN RENDER ---
   
-  // Added min-w-[210mm] to ensure A4 size matches even if parent is smaller (mobile)
+  // Use h-full to fill parent container (which is fixed A4 in export)
   const containerClass = `bg-white shadow-2xl w-[210mm] min-w-[210mm] min-h-[297mm] mx-auto relative flex flex-col overflow-hidden print-exact-a4 ${theme.font === 'serif' ? 'font-serif' : theme.font === 'mono' ? 'font-mono' : 'font-sans'}`;
 
   // Use the reference design for standard layout
@@ -194,16 +193,16 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             )}
 
             <div 
-                className="relative z-10 px-12 pt-16 flex-grow flex flex-col"
-                style={{ paddingTop: marginTop ? marginTop : '4rem', paddingBottom: marginBottom }}
+                className="relative z-10 px-12 pt-12 flex-grow flex flex-col"
+                style={{ paddingTop: marginTop ? marginTop : '3.5rem', paddingBottom: marginBottom }}
             >
-                {/* Header Section */}
-                <div className="flex justify-between items-start mb-12">
-                    <div className="mt-8">
-                        <h1 className="text-5xl font-serif text-slate-900 mb-4 tracking-tight">
+                {/* Header Section - Reduced Margins */}
+                <div className="flex justify-between items-start mb-8">
+                    <div className="mt-6">
+                        <h1 className="text-4xl font-serif text-slate-900 mb-3 tracking-tight">
                             {isQuotation ? 'QUOTATION' : 'INVOICE'}
                         </h1>
-                        <div className="text-base text-slate-700 space-y-1">
+                        <div className="text-sm text-slate-700 space-y-1">
                             <p><span className="font-medium text-slate-900">
                                 {isQuotation ? 'Invoice Number:' : 'Invoice Number:'}
                             </span> {data.invoiceNumber}</p>
@@ -215,47 +214,47 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                     </div>
                 </div>
 
-                {/* Addresses */}
-                <div className="flex gap-8 mb-16">
+                {/* Addresses - Reduced Margins */}
+                <div className="flex gap-8 mb-8">
                     <div className="w-1/2">
-                        <h3 className="font-bold text-sm uppercase mb-2 tracking-wide text-slate-900">
+                        <h3 className="font-bold text-xs uppercase mb-2 tracking-wide text-slate-900">
                             {isQuotation ? 'QUOTATION TO:' : 'BILL TO:'}
                         </h3>
                         {client ? (
                             <div className="text-sm text-slate-800 leading-relaxed font-medium">
-                                <p className="text-lg mb-1">{client.name}</p>
-                                <p className="whitespace-pre-line mb-2">{client.address}</p>
-                                {client.gstin && <p>GSTIN: {client.gstin}</p>}
-                                {client.vatId && <p>VAT: {client.vatId}</p>}
+                                <p className="text-base mb-1">{client.name}</p>
+                                <p className="whitespace-pre-line mb-1 text-xs">{client.address}</p>
+                                {client.gstin && <p className="text-xs">GSTIN: {client.gstin}</p>}
+                                {client.vatId && <p className="text-xs">VAT: {client.vatId}</p>}
                             </div>
                         ) : (
                             <p className="text-slate-400 italic">Select a client...</p>
                         )}
                     </div>
                     <div className="w-1/2 pl-8">
-                        <h3 className="font-bold text-sm uppercase mb-2 tracking-wide text-slate-900">FROM:</h3>
+                        <h3 className="font-bold text-xs uppercase mb-2 tracking-wide text-slate-900">FROM:</h3>
                          <div className="text-sm text-slate-800 leading-relaxed font-medium">
-                            <p className="text-lg mb-1">{sender.name}</p>
-                            <p className="whitespace-pre-line mb-2">{sender.address}</p>
+                            <p className="text-base mb-1">{sender.name}</p>
+                            <p className="whitespace-pre-line mb-1 text-xs">{sender.address}</p>
                          </div>
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="relative mb-8">
+                {/* Table - No Spacer */}
+                <div className="relative mb-6">
                     <Watermark />
                     <ReferenceTable />
                 </div>
 
-                {/* Footer Section */}
-                <div className="mt-auto mb-20">
-                     <div className="flex gap-12 items-start">
+                {/* Footer Section - Pushed to bottom but with controlled margins */}
+                <div className="mt-auto mb-16 relative z-10">
+                     <div className="flex gap-8 items-start">
                          {/* Left: Payment Info */}
                          <div className="w-[60%] text-sm">
                              {isQuotation ? (
                                 <>
-                                  <h3 className="font-serif font-bold uppercase mb-2 text-slate-900 text-base">Terms & Conditions:</h3>
-                                  <div className="text-slate-800 font-medium space-y-1">
+                                  <h3 className="font-serif font-bold uppercase mb-2 text-slate-900 text-sm">Terms & Conditions:</h3>
+                                  <div className="text-slate-800 font-medium space-y-1 text-xs">
                                     {data.notes ? (
                                         <p className="whitespace-pre-line">{data.notes}</p>
                                     ) : (
@@ -268,8 +267,8 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                                 </>
                              ) : (
                                 <>
-                                   <h3 className="font-serif font-bold uppercase mb-2 text-slate-900 text-base">PAYMENT INFORMATION:</h3>
-                                   <div className="text-slate-800 font-bold space-y-1">
+                                   <h3 className="font-serif font-bold uppercase mb-2 text-slate-900 text-sm">PAYMENT INFORMATION:</h3>
+                                   <div className="text-slate-800 font-bold space-y-1 text-xs">
                                        {sender.accountName && <p>Name: {sender.accountName}</p>}
                                        {sender.accountNumber && <p>Account: {sender.accountNumber}</p>}
                                        {sender.pan && <p>PAN : {sender.pan}</p>}
@@ -283,12 +282,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
 
                          {/* Right: Totals Box */}
                          <div className="w-[40%]">
-                             <div className="border-2 border-slate-900">
-                                 <div className="flex justify-between p-4 text-slate-800 font-medium bg-white">
+                             <div className="border-2 border-slate-900 bg-white">
+                                 <div className="flex justify-between p-3 text-slate-800 font-medium bg-white">
                                      <span>Sub Total:</span>
                                      <span>{currencyFormatter.format(subtotal).replace('₹', '₹ ')}</span>
                                  </div>
-                                 <div className="p-4 text-white font-bold text-xl flex justify-between items-center border-t-2 border-slate-900" style={{ backgroundColor: theme.colors.primary }}>
+                                 <div className="p-3 text-white font-bold text-lg flex justify-between items-center border-t-2 border-slate-900" style={{ backgroundColor: theme.colors.primary }}>
                                      <span className="uppercase tracking-widest font-serif">TOTAL:</span>
                                      <span>{currencyFormatter.format(total).replace('₹', '₹ ')}/-</span>
                                  </div>
@@ -300,7 +299,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                 {/* Website / Bottom Text */}
                 <div className="absolute bottom-6 left-0 right-0 text-center relative z-20">
                      <p className="flex items-center justify-center gap-2 text-slate-500 text-sm">
-                        <span className="text-xl">🌐</span> {sender.website || 'www.example.com'}
+                        <span className="text-lg">🌐</span> {sender.website || 'www.example.com'}
                      </p>
                      {!isQuotation && (
                         <p className="absolute left-12 bottom-0 text-[10px] text-slate-500 font-medium">*not registered under gst</p>
