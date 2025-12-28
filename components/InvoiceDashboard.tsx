@@ -12,7 +12,7 @@ import ClientSelector from './ClientSelector';
 import InvoicePreview from './InvoicePreview';
 import SmartInput from './SmartInput';
 import SettingsModal from './SettingsModal';
-import { Plus, Trash2, Printer, Eye, Edit, ArrowLeft, FileText, Settings as SettingsIcon, Mail, LogOut } from 'lucide-react';
+import { Plus, Trash2, Download, Eye, Edit, ArrowLeft, FileText, Settings as SettingsIcon, Mail, LogOut } from 'lucide-react';
 
 interface InvoiceDashboardProps {
   onLogout: () => void;
@@ -203,7 +203,7 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
     setCustomThemes(prev => prev.map(t => t.id === updatedTheme.id ? updatedTheme : t));
   };
 
-  const handlePrint = () => {
+  const handleExport = () => {
     window.print();
   };
 
@@ -475,11 +475,11 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
                   <span>Email Client</span>
                 </button>
                 <button 
-                  onClick={handlePrint}
+                  onClick={handleExport}
                   className="bg-slate-900 text-white px-5 py-2.5 rounded-full shadow-lg hover:bg-slate-800 hover:shadow-xl transition-all flex items-center space-x-2 font-medium active:scale-95"
                 >
-                  <Printer size={18} />
-                  <span>Print / PDF</span>
+                  <Download size={18} />
+                  <span>Export PDF</span>
                 </button>
              </div>
           </div>
