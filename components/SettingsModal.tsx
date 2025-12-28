@@ -736,7 +736,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 type="file" 
                                                 ref={watermarkInputRef} 
                                                 className="hidden" 
-                                                accept="image/png,image/jpeg"
+                                                accept="image/*"
                                                 onChange={(e) => handleFileChange(e, (base64) => onUpdateCustomWatermark && onUpdateCustomWatermark(base64))}
                                             />
                                             <button 

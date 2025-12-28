@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   InvoiceData, 
   DEFAULT_SENDER, 
@@ -6,13 +6,16 @@ import {
   Client,
   MOCK_CLIENTS,
   SenderDetails,
-  InvoiceTheme
+  InvoiceTheme,
+  InvoiceHistoryItem
 } from '../types';
 import ClientSelector from './ClientSelector';
 import InvoicePreview from './InvoicePreview';
 import SmartInput from './SmartInput';
 import SettingsModal from './SettingsModal';
-import { Plus, Trash2, Download, Eye, Edit, ArrowLeft, FileText, Settings as SettingsIcon, Mail, LogOut } from 'lucide-react';
+import HistoryModal from './HistoryModal';
+import { Plus, Trash2, Download, Eye, Edit, ArrowLeft, FileText, Settings as SettingsIcon, Mail, LogOut, Loader2, Clock, Save as SaveIcon } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 
 interface InvoiceDashboardProps {
   onLogout: () => void;
@@ -80,6 +83,16 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
     return saved ? parseInt(saved, 10) : 10;
   });
 
+  // Load History
+  const [history, setHistory] = useState<InvoiceHistoryItem[]>(() => {
+      try {
+          const saved = localStorage.getItem('invoicify_history');
+          return saved ? JSON.parse(saved) : [];
+      } catch {
+          return [];
+      }
+  });
+
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     type: 'invoice',
     invoiceNumber: `${invoicePrefix}00125`,
@@ -95,6 +108,10 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
 
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  
+  const exportRef = useRef<HTMLDivElement>(null);
 
   // Persistence Effects
   useEffect(() => {
@@ -135,6 +152,51 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
   useEffect(() => {
     localStorage.setItem('invoicify_watermark_opacity', String(watermarkOpacity));
   }, [watermarkOpacity]);
+
+  useEffect(() => {
+      localStorage.setItem('invoicify_history', JSON.stringify(history));
+  }, [history]);
+
+  // History Management Logic
+  const saveToHistory = (dataToSave: InvoiceData) => {
+      setHistory(prev => {
+          // Check if invoice number exists
+          const index = prev.findIndex(item => item.data.invoiceNumber === dataToSave.invoiceNumber);
+          
+          if (index >= 0) {
+              // Update existing
+              const updatedHistory = [...prev];
+              updatedHistory[index] = {
+                  ...updatedHistory[index],
+                  lastModified: Date.now(),
+                  data: dataToSave
+              };
+              // Move to top
+              const item = updatedHistory.splice(index, 1)[0];
+              updatedHistory.unshift(item);
+              return updatedHistory;
+          } else {
+              // Add new
+              const newItem: InvoiceHistoryItem = {
+                  id: uuidv4(),
+                  createdAt: Date.now(),
+                  lastModified: Date.now(),
+                  data: dataToSave
+              };
+              return [newItem, ...prev];
+          }
+      });
+  };
+
+  const deleteFromHistory = (id: string) => {
+      setHistory(prev => prev.filter(item => item.id !== id));
+  };
+
+  const loadFromHistory = (data: InvoiceData) => {
+      setInvoiceData(data);
+  };
+
+  // -------------------------
 
   const addItem = () => {
     const newItem: LineItem = {
@@ -204,7 +266,43 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
   };
 
   const handleExport = () => {
-    window.print();
+    // Auto-save to history on export
+    saveToHistory(invoiceData);
+
+    setIsExporting(true);
+    
+    // Allow React to render the export container if needed (although it is always mounted now)
+    setTimeout(() => {
+        const element = exportRef.current;
+        if (!element) {
+            setIsExporting(false);
+            return;
+        }
+
+        const opt = {
+            margin: 0,
+            filename: `${invoiceData.invoiceNumber || 'invoice'}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, logging: false },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        const html2pdf = (window as any).html2pdf;
+        if (html2pdf) {
+            html2pdf().set(opt).from(element).save().then(() => {
+                setIsExporting(false);
+            }).catch((err: any) => {
+                console.error("PDF generation failed:", err);
+                alert("Failed to generate PDF. Falling back to print.");
+                window.print();
+                setIsExporting(false);
+            });
+        } else {
+            console.warn("html2pdf library not loaded");
+            window.print();
+            setIsExporting(false);
+        }
+    }, 500);
   };
 
   const handleEmail = () => {
@@ -212,6 +310,10 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
        alert("Please select a client with an email address first.");
        return;
     }
+    
+    // Auto-save to history on email
+    saveToHistory(invoiceData);
+
     const total = invoiceData.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
     const docName = invoiceData.type === 'invoice' ? 'Invoice' : 'Quotation';
     const subject = `${docName} ${invoiceData.invoiceNumber} from ${invoiceData.sender.name}`;
@@ -221,6 +323,11 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
     if(window.confirm(`Opening email draft to ${invoiceData.client.email}.\n\nNOTE: You must manually attach the PDF after printing/saving it.`)) {
         window.open(`mailto:${invoiceData.client.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
     }
+  };
+
+  const handleManualSave = () => {
+      saveToHistory(invoiceData);
+      alert("Invoice saved to history!");
   };
 
   return (
@@ -250,7 +357,15 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
         onUpdateWatermarkOpacity={setWatermarkOpacity}
       />
 
-      {/* SCREEN LAYOUT (Hidden during print) */}
+      <HistoryModal 
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        history={history}
+        onLoad={loadFromHistory}
+        onDelete={deleteFromHistory}
+      />
+
+      {/* SCREEN LAYOUT */}
       <div className="min-h-screen flex flex-col md:flex-row font-sans print:hidden">
         {/* Editor Panel (Left) */}
         <div className={`w-full md:w-5/12 lg:w-4/12 bg-white border-r border-slate-200 h-[calc(100vh-60px)] md:h-screen overflow-y-auto ${activeTab === 'preview' ? 'hidden md:block' : ''}`}>
@@ -286,6 +401,13 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
               </div>
               <div className="flex items-center gap-2">
                 <button 
+                  onClick={() => setIsHistoryOpen(true)}
+                  className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                  title="History"
+                >
+                   <Clock size={20} />
+                </button>
+                <button 
                   onClick={() => setIsSettingsOpen(true)}
                   className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
                   title="Settings"
@@ -310,13 +432,21 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
                 <LogOut size={16} />
                 <span>Exit</span>
               </button>
-               <button 
-                onClick={() => setIsSettingsOpen(true)}
-                className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-100 px-3 py-2 rounded-lg"
-              >
-                <SettingsIcon size={16} />
-                <span>Config</span>
-              </button>
+               <div className="flex gap-2">
+                 <button 
+                  onClick={() => setIsHistoryOpen(true)}
+                  className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-100 px-3 py-2 rounded-lg"
+                 >
+                   <Clock size={16} />
+                 </button>
+                 <button 
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-100 px-3 py-2 rounded-lg"
+                 >
+                   <SettingsIcon size={16} />
+                   <span>Config</span>
+                 </button>
+               </div>
             </div>
 
             <section className="mb-8">
@@ -468,18 +598,26 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
              {/* Action Buttons */}
              <div className="pointer-events-auto flex space-x-3">
                 <button 
+                  onClick={handleManualSave}
+                  className="bg-white text-slate-600 px-4 py-2.5 rounded-full shadow-lg border border-slate-200 hover:bg-slate-50 transition-all flex items-center space-x-2 font-medium active:scale-95"
+                  title="Save Draft"
+                >
+                  <SaveIcon size={18} />
+                </button>
+                <button 
                   onClick={handleEmail}
                   className="bg-white text-slate-700 px-5 py-2.5 rounded-full shadow-lg border border-slate-200 hover:bg-slate-50 transition-all flex items-center space-x-2 font-medium active:scale-95"
                 >
                   <Mail size={18} />
-                  <span>Email Client</span>
+                  <span>Email</span>
                 </button>
                 <button 
                   onClick={handleExport}
-                  className="bg-slate-900 text-white px-5 py-2.5 rounded-full shadow-lg hover:bg-slate-800 hover:shadow-xl transition-all flex items-center space-x-2 font-medium active:scale-95"
+                  disabled={isExporting}
+                  className="bg-slate-900 text-white px-5 py-2.5 rounded-full shadow-lg hover:bg-slate-800 hover:shadow-xl transition-all flex items-center space-x-2 font-medium active:scale-95 disabled:bg-slate-600 disabled:cursor-not-allowed"
                 >
-                  <Download size={18} />
-                  <span>Export PDF</span>
+                  {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                  <span>{isExporting ? 'Generating...' : 'PDF'}</span>
                 </button>
              </div>
           </div>
@@ -501,19 +639,22 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
         </div>
       </div>
 
-      {/* PRINT LAYOUT (Visible only during print) 
-          This renders a clean, unscaled version at the document root for perfect PDF generation.
+      {/* 
+        OFF-SCREEN EXPORT CONTAINER
+        Positioned off-screen to remain in DOM for html2canvas but invisible to user.
       */}
-      <div className="hidden print:block print:w-full print:h-auto print:overflow-visible">
-        <InvoicePreview 
-          data={invoiceData} 
-          logoSrc={customLogo} 
-          templateId={templateId}
-          showWatermark={showWatermark}
-          customThemes={customThemes}
-          customWatermark={customWatermark}
-          watermarkOpacity={watermarkOpacity}
-        />
+      <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
+        <div ref={exportRef} className="w-[210mm] min-h-[297mm] bg-white">
+            <InvoicePreview 
+                data={invoiceData} 
+                logoSrc={customLogo} 
+                templateId={templateId}
+                showWatermark={showWatermark}
+                customThemes={customThemes}
+                customWatermark={customWatermark}
+                watermarkOpacity={watermarkOpacity}
+            />
+        </div>
       </div>
     </>
   );

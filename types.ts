@@ -1,3 +1,4 @@
+
 export interface Client {
   id: string;
   name: string;
@@ -43,6 +44,13 @@ export interface InvoiceData {
   client: Client | null;
   items: LineItem[];
   notes?: string;
+}
+
+export interface InvoiceHistoryItem {
+  id: string;
+  createdAt: number;
+  lastModified: number;
+  data: InvoiceData;
 }
 
 export interface InvoiceTheme {
