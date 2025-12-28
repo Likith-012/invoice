@@ -151,7 +151,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         </thead>
         <tbody>
           {items.map((item, index) => (
-            <tr key={item.id} className="border-b border-slate-200">
+            <tr key={item.id} className="border-b border-slate-300">
               <td className="py-6 px-4 align-top text-slate-700 font-medium">{index + 1}.</td>
               <td className="py-6 px-4 align-top text-slate-800 font-medium whitespace-pre-wrap">{item.description}</td>
               {isQuotation && (
@@ -171,7 +171,8 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
 
   // --- MAIN RENDER ---
   
-  const containerClass = `bg-white shadow-2xl w-[210mm] min-h-[297mm] mx-auto relative flex flex-col overflow-hidden print-exact-a4 ${theme.font === 'serif' ? 'font-serif' : theme.font === 'mono' ? 'font-mono' : 'font-sans'}`;
+  // Added min-w-[210mm] to ensure A4 size matches even if parent is smaller (mobile)
+  const containerClass = `bg-white shadow-2xl w-[210mm] min-w-[210mm] min-h-[297mm] mx-auto relative flex flex-col overflow-hidden print-exact-a4 ${theme.font === 'serif' ? 'font-serif' : theme.font === 'mono' ? 'font-mono' : 'font-sans'}`;
 
   // Use the reference design for standard layout
   if (theme.layout === 'standard') {
@@ -382,9 +383,9 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                 <Watermark />
                 <ReferenceTable />
                 </div>
-                <div className="mt-8 pt-8 border-t border-slate-200">
+                <div className="mt-8 pt-8 border-t border-slate-300">
                 <div className="w-1/2 ml-auto"><div className="w-full">
-       <div className="flex justify-between py-2 border-b border-slate-200">
+       <div className="flex justify-between py-2 border-b border-slate-300">
           <span className="text-slate-500 text-sm">Subtotal</span>
           <span className="font-medium">{currencyFormatter.format(subtotal)}</span>
        </div>
