@@ -284,7 +284,7 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
             filename: `${invoiceData.invoiceNumber || 'invoice'}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { 
-                scale: 2, 
+                scale: 3, 
                 useCORS: true, 
                 logging: false,
                 // Critical for mobile: force desktop width to prevent layout shifts

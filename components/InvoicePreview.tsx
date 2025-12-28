@@ -65,7 +65,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   const formatDate = (d: string) => {
     if (!d) return '';
     const dateObj = new Date(d);
-    return dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase();
   };
 
   // --- Subcomponents for Rendering ---
@@ -75,13 +75,13 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
       className={className} 
       style={{ 
         transform: `translate(${logoX}mm, ${logoY}mm) scale(${logoScale})`,
-        transformOrigin: 'center center' // or top right depending on layout, but center is safer for general scaling
+        transformOrigin: 'right top' 
       }}
     >
       <img 
         src={logoSrc || `/logo.png?t=${timestamp}`}
         alt="Logo" 
-        className="h-16 w-auto object-contain"
+        className="h-20 w-auto object-contain"
         onError={(e) => {
            e.currentTarget.style.display = 'none';
            document.getElementById(`fallback-${templateId}`)?.classList.remove('hidden');
@@ -104,7 +104,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
        >
          <div style={{ transform: `translate(${wmX}mm, ${wmY}mm) scale(${wmScale})` }}>
            {watermarkSrc ? (
-              <img src={watermarkSrc} className="w-3/4 max-w-[500px] object-contain" alt="Watermark" />
+              <img src={watermarkSrc} className="w-[500px] object-contain" alt="Watermark" />
            ) : (
               <svg width="400" height="400" viewBox="0 0 100 100" fill={theme.colors.primary}>
                  <path d="M50 15 L85 75 H15 L50 15Z" stroke={theme.colors.primary} strokeWidth="5" fill="none" />
@@ -116,56 +116,50 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     );
   };
 
-  // --- STANDARD LAYOUT IMPLEMENTATION (New Reference Design) ---
+  // --- STANDARD LAYOUT IMPLEMENTATION (Matches "Adversity Solutions" Screenshot) ---
 
   const TopWave = () => (
-    <div className="absolute top-0 left-0 right-0 h-32 z-0 overflow-hidden">
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
-            <path d="M0 0 H100 V30 Q50 60 0 20 Z" fill={theme.colors.primary} />
-            <path d="M0 20 Q50 60 100 30 V35 Q50 65 0 25 Z" fill={theme.colors.accent} />
+    <div className="absolute top-0 left-0 right-0 h-40 z-0 overflow-hidden pointer-events-none">
+        <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full">
+            <path fill={theme.colors.accent} fillOpacity="1" d="M0,0L1440,0L1440,60C1100,60 1000,120 0,60Z"></path>
+            <path fill={theme.colors.primary} fillOpacity="1" d="M0,0L1440,0L1440,40C1100,40 1000,100 0,40Z"></path>
         </svg>
     </div>
   );
 
   const BottomWave = () => (
-    <div className="absolute bottom-0 left-0 right-0 h-32 z-0 overflow-hidden flex items-end">
-         <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
-             <path d="M0 100 H100 V50 Q50 90 0 70 Z" fill={theme.colors.accent} opacity="0.3" /> 
-             <path d="M0 100 H100 V80 Q50 100 0 90 Z" fill={theme.colors.primary} />
+    <div className="absolute bottom-0 left-0 right-0 h-40 z-0 overflow-hidden flex items-end pointer-events-none">
+         <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full">
+             <path fill={theme.colors.accent} fillOpacity="0.4" d="M0,320L1440,320L1440,220C1000,300 600,200 0,300Z"></path>
+             <path fill={theme.colors.primary} fillOpacity="1" d="M0,320L1440,320L1440,300C1000,300 400,280 0,320Z"></path>
+             <path fill={theme.colors.accent} fillOpacity="1" d="M0,320L1440,320L1440,280C1200,320 800,320 0,320Z"></path>
          </svg>
     </div>
   );
 
   const ReferenceTable = () => (
     <div className="relative z-10 w-full mb-8">
-      <table className="w-full border-collapse">
-        <thead>
-          <tr style={{ backgroundColor: theme.colors.primary, color: 'white' }}>
-            <th className="py-3 px-4 text-left w-[10%] font-serif font-bold uppercase tracking-wider text-sm border-r border-white/10">Item</th>
-            <th className="py-3 px-4 text-left w-[50%] font-serif font-bold uppercase tracking-wider text-sm border-r border-white/10">Description</th>
-            {isQuotation && (
-              <th className="py-3 px-4 text-right w-[20%] font-serif font-bold uppercase tracking-wider text-sm border-r border-white/10">Rate</th>
-            )}
-            <th className="py-3 px-4 text-right w-[20%] font-serif font-bold uppercase tracking-wider text-sm">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
+      {/* Table Header */}
+      <div className="flex w-full" style={{ backgroundColor: theme.colors.primary, color: 'white' }}>
+          <div className="py-3 px-6 text-left w-[15%] font-serif font-bold uppercase tracking-widest text-sm">Item</div>
+          <div className="py-3 px-6 text-left w-[60%] font-serif font-bold uppercase tracking-widest text-sm">Description</div>
+          <div className="py-3 px-6 text-right w-[25%] font-serif font-bold uppercase tracking-widest text-sm">Amount</div>
+      </div>
+      
+      {/* Table Body */}
+      <div className="border-x-2 border-b-2 border-slate-800 bg-white/50 relative">
           {items.map((item, index) => (
-            <tr key={item.id} className="border-b border-slate-300">
-              <td className="py-6 px-4 align-top text-slate-700 font-medium">{index + 1}.</td>
-              <td className="py-6 px-4 align-top text-slate-800 font-medium whitespace-pre-wrap">{item.description}</td>
-              {isQuotation && (
-                <td className="py-6 px-4 align-top text-right text-slate-600">
-                   {currencyFormatter.format(item.unitPrice)}
-                </td>
-              )}
-              <td className="py-6 px-4 align-top text-right font-bold text-slate-900">
-                {currencyFormatter.format(item.quantity * item.unitPrice)}
-              </td>
-            </tr>
+            <div key={item.id} className="flex w-full border-b border-slate-300 last:border-0">
+               <div className="py-4 px-6 w-[15%] text-slate-800 font-medium text-center">{index + 1}.</div>
+               <div className="py-4 px-6 w-[60%] text-slate-800 font-medium whitespace-pre-wrap">{item.description}</div>
+               <div className="py-4 px-6 w-[25%] text-right font-bold text-slate-900">
+                  {currencyFormatter.format(item.quantity * item.unitPrice).replace('₹', '₹ ')}
+               </div>
+            </div>
           ))}
-        </tbody>
-      </table>
+          {/* Spacer to give height if few items */}
+          {items.length < 3 && <div className="h-32"></div>}
+      </div>
     </div>
   );
 
@@ -200,36 +194,36 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             )}
 
             <div 
-                className="relative z-10 px-12 pt-12 flex-grow flex flex-col"
-                style={{ paddingTop: marginTop, paddingBottom: marginBottom }}
+                className="relative z-10 px-12 pt-16 flex-grow flex flex-col"
+                style={{ paddingTop: marginTop ? marginTop : '4rem', paddingBottom: marginBottom }}
             >
-                {/* Header */}
-                <div className="flex justify-between items-start mb-16">
-                    <div>
+                {/* Header Section */}
+                <div className="flex justify-between items-start mb-12">
+                    <div className="mt-8">
                         <h1 className="text-5xl font-serif text-slate-900 mb-4 tracking-tight">
                             {isQuotation ? 'QUOTATION' : 'INVOICE'}
                         </h1>
-                        <div className="text-sm text-slate-600 space-y-1">
-                            <p><span className="font-medium">
-                                {isQuotation ? 'Date:' : 'Invoice Number:'}
-                            </span> {isQuotation ? formatDate(data.date) : data.invoiceNumber}</p>
-                            {!isQuotation && <p><span className="font-medium">Date:</span> {formatDate(data.date)}</p>}
+                        <div className="text-base text-slate-700 space-y-1">
+                            <p><span className="font-medium text-slate-900">
+                                {isQuotation ? 'Invoice Number:' : 'Invoice Number:'}
+                            </span> {data.invoiceNumber}</p>
+                            <p><span className="font-medium text-slate-900">Date:</span> {formatDate(data.date)}</p>
                         </div>
                     </div>
                     <div className="text-right">
-                        <Logo className="mb-2 flex justify-end origin-right" />
+                        <Logo className="mb-2 flex justify-end" />
                     </div>
                 </div>
 
                 {/* Addresses */}
-                <div className="flex gap-12 mb-12">
+                <div className="flex gap-8 mb-16">
                     <div className="w-1/2">
-                        <h3 className="font-serif font-bold text-sm uppercase mb-3 tracking-widest text-slate-900">
+                        <h3 className="font-bold text-sm uppercase mb-2 tracking-wide text-slate-900">
                             {isQuotation ? 'QUOTATION TO:' : 'BILL TO:'}
                         </h3>
                         {client ? (
-                            <div className="text-sm text-slate-700 leading-relaxed">
-                                <p className="font-bold text-slate-900 text-lg mb-1">{client.name}</p>
+                            <div className="text-sm text-slate-800 leading-relaxed font-medium">
+                                <p className="text-lg mb-1">{client.name}</p>
                                 <p className="whitespace-pre-line mb-2">{client.address}</p>
                                 {client.gstin && <p>GSTIN: {client.gstin}</p>}
                                 {client.vatId && <p>VAT: {client.vatId}</p>}
@@ -238,30 +232,30 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                             <p className="text-slate-400 italic">Select a client...</p>
                         )}
                     </div>
-                    <div className="w-1/2">
-                        <h3 className="font-serif font-bold text-sm uppercase mb-3 tracking-widest text-slate-900">FROM:</h3>
-                         <div className="text-sm text-slate-700 leading-relaxed">
-                            <p className="font-bold text-slate-900 text-lg mb-1">{sender.name}</p>
+                    <div className="w-1/2 pl-8">
+                        <h3 className="font-bold text-sm uppercase mb-2 tracking-wide text-slate-900">FROM:</h3>
+                         <div className="text-sm text-slate-800 leading-relaxed font-medium">
+                            <p className="text-lg mb-1">{sender.name}</p>
                             <p className="whitespace-pre-line mb-2">{sender.address}</p>
                          </div>
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="relative min-h-[300px]">
+                <div className="relative mb-8">
                     <Watermark />
                     <ReferenceTable />
                 </div>
 
                 {/* Footer Section */}
-                <div className="mt-auto mb-16">
-                     <div className="flex gap-8 items-start">
-                         {/* Left: Payment Info or Terms */}
+                <div className="mt-auto mb-20">
+                     <div className="flex gap-12 items-start">
+                         {/* Left: Payment Info */}
                          <div className="w-[60%] text-sm">
                              {isQuotation ? (
                                 <>
-                                  <h3 className="font-serif font-bold uppercase mb-2 text-slate-900">Terms & Conditions</h3>
-                                  <div className="text-slate-700 space-y-1">
+                                  <h3 className="font-serif font-bold uppercase mb-2 text-slate-900 text-base">Terms & Conditions:</h3>
+                                  <div className="text-slate-800 font-medium space-y-1">
                                     {data.notes ? (
                                         <p className="whitespace-pre-line">{data.notes}</p>
                                     ) : (
@@ -274,29 +268,29 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                                 </>
                              ) : (
                                 <>
-                                   <h3 className="font-serif font-bold uppercase mb-2 text-slate-900">PAYMENT INFORMATION:</h3>
-                                   <div className="text-slate-700 space-y-1 font-medium">
-                                       {sender.accountName && <p><span className="font-bold">Name:</span> {sender.accountName}</p>}
-                                       {sender.accountNumber && <p><span className="font-bold">Account:</span> {sender.accountNumber}</p>}
-                                       {sender.pan && <p><span className="font-bold">PAN:</span> {sender.pan}</p>}
-                                       {sender.branch && <p><span className="font-bold">Branch:</span> {sender.branch}</p>}
-                                       {sender.ifsCode && <p><span className="font-bold">IFS code:</span> {sender.ifsCode}</p>}
-                                       {sender.mobile && <p className="mt-2"><span className="font-bold">Mobile No:</span> {sender.mobile}</p>}
+                                   <h3 className="font-serif font-bold uppercase mb-2 text-slate-900 text-base">PAYMENT INFORMATION:</h3>
+                                   <div className="text-slate-800 font-bold space-y-1">
+                                       {sender.accountName && <p>Name: {sender.accountName}</p>}
+                                       {sender.accountNumber && <p>Account: {sender.accountNumber}</p>}
+                                       {sender.pan && <p>PAN : {sender.pan}</p>}
+                                       {sender.branch && <p>Branch: {sender.branch}</p>}
+                                       {sender.ifsCode && <p>IFS code: {sender.ifsCode}</p>}
+                                       {sender.mobile && <p className="mt-2">Mobile No: {sender.mobile}</p>}
                                    </div>
                                 </>
                              )}
                          </div>
 
-                         {/* Right: Totals */}
+                         {/* Right: Totals Box */}
                          <div className="w-[40%]">
-                             <div className="border border-slate-900">
-                                 <div className="flex justify-between p-3 text-slate-700 font-medium">
+                             <div className="border-2 border-slate-900">
+                                 <div className="flex justify-between p-4 text-slate-800 font-medium bg-white">
                                      <span>Sub Total:</span>
-                                     <span>{currencyFormatter.format(subtotal)}</span>
+                                     <span>{currencyFormatter.format(subtotal).replace('₹', '₹ ')}</span>
                                  </div>
-                                 <div className="p-3 text-white font-bold text-xl flex justify-between items-center" style={{ backgroundColor: theme.colors.primary }}>
+                                 <div className="p-4 text-white font-bold text-xl flex justify-between items-center border-t-2 border-slate-900" style={{ backgroundColor: theme.colors.primary }}>
                                      <span className="uppercase tracking-widest font-serif">TOTAL:</span>
-                                     <span>{currencyFormatter.format(total)}/-</span>
+                                     <span>{currencyFormatter.format(total).replace('₹', '₹ ')}/-</span>
                                  </div>
                              </div>
                          </div>
@@ -304,12 +298,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                 </div>
                 
                 {/* Website / Bottom Text */}
-                <div className="text-center text-xs text-slate-500 mb-8 relative z-20">
-                     <p className="flex items-center justify-center gap-1">
-                        <span className="text-lg">🌐</span> {sender.website || 'www.example.com'}
+                <div className="absolute bottom-6 left-0 right-0 text-center relative z-20">
+                     <p className="flex items-center justify-center gap-2 text-slate-500 text-sm">
+                        <span className="text-xl">🌐</span> {sender.website || 'www.example.com'}
                      </p>
                      {!isQuotation && (
-                        <p className="absolute left-0 bottom-0 text-[10px]">*not registered under gst</p>
+                        <p className="absolute left-12 bottom-0 text-[10px] text-slate-500 font-medium">*not registered under gst</p>
                      )}
                 </div>
 
@@ -318,7 +312,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
       );
   }
 
-  // Fallback for Sidebar/Minimal if selected (keeping existing logic roughly, or we could just remove them if not needed, but safe to keep)
+  // Fallback for Sidebar/Minimal if selected
   if (theme.layout === 'sidebar') {
      return (
       <div className={containerClass}>
@@ -381,7 +375,28 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                 </div>
                 <div className="relative flex-grow">
                 <Watermark />
-                <ReferenceTable />
+                <div className="relative z-10 w-full mb-8">
+                    <table className="w-full border-collapse">
+                        <thead>
+                        <tr style={{ color: theme.colors.primary }}>
+                            <th className="py-2 px-2 text-left w-[10%] uppercase text-sm border-b border-slate-300">Item</th>
+                            <th className="py-2 px-2 text-left w-[50%] uppercase text-sm border-b border-slate-300">Description</th>
+                            <th className="py-2 px-2 text-right w-[20%] uppercase text-sm border-b border-slate-300">Amount</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {items.map((item, index) => (
+                            <tr key={item.id} className="border-b border-slate-200">
+                            <td className="py-4 px-2 align-top text-slate-600 font-medium">{index + 1}.</td>
+                            <td className="py-4 px-2 align-top text-slate-800 font-medium whitespace-pre-wrap">{item.description}</td>
+                            <td className="py-4 px-2 align-top text-right font-bold text-slate-900">
+                                {currencyFormatter.format(item.quantity * item.unitPrice)}
+                            </td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                </div>
                 </div>
                 <div className="mt-8 pt-8 border-t border-slate-300">
                 <div className="w-1/2 ml-auto"><div className="w-full">
@@ -444,7 +459,28 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                 </div>
                 <div className="relative flex-grow">
                     <Watermark />
-                    <ReferenceTable />
+                    <div className="relative z-10 w-full mb-8">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr style={{ color: theme.colors.primary }}>
+                            <th className="py-2 px-2 text-left w-[10%] uppercase text-sm border-b-2 border-slate-900">Item</th>
+                            <th className="py-2 px-2 text-left w-[50%] uppercase text-sm border-b-2 border-slate-900">Description</th>
+                            <th className="py-2 px-2 text-right w-[20%] uppercase text-sm border-b-2 border-slate-900">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {items.map((item, index) => (
+                            <tr key={item.id} className="border-b border-slate-200">
+                              <td className="py-4 px-2 align-top text-slate-600 font-medium">{index + 1}.</td>
+                              <td className="py-4 px-2 align-top text-slate-800 font-medium whitespace-pre-wrap">{item.description}</td>
+                              <td className="py-4 px-2 align-top text-right font-bold text-slate-900">
+                                {currencyFormatter.format(item.quantity * item.unitPrice)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                 </div>
                 <div className="flex justify-between items-start mt-8 pt-8 border-t-2 border-slate-900" style={{ borderColor: theme.colors.primary }}>
                     <div className="w-1/2 text-xs">
