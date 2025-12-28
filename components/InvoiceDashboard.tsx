@@ -284,11 +284,11 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
             filename: `${invoiceData.invoiceNumber || 'invoice'}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { 
-                scale: 3, 
+                scale: 2, // 2 is optimal for mobile performance vs quality
                 useCORS: true, 
                 logging: false,
-                // Critical for mobile: force desktop width to prevent layout shifts
-                windowWidth: 1200 
+                // Critical for mobile: force desktop width (A4 width in px) to prevent layout shifts/half-page rendering
+                windowWidth: 794 
             },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
@@ -649,6 +649,7 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
         OFF-SCREEN EXPORT CONTAINER
         Positioned off-screen to remain in DOM for html2canvas but invisible to user.
         Fixed width ensures consistency on mobile.
+        Fixed height ensures 1 page by default unless content pushes it.
       */}
       <div style={{ position: 'fixed', left: '-9999px', top: 0, width: '210mm' }}>
         <div ref={exportRef} className="w-[210mm] min-h-[297mm] bg-white">

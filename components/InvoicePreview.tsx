@@ -147,9 +147,9 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
       </div>
       
       {/* Table Body */}
-      <div className="border-x-2 border-b-2 border-slate-800 bg-white/50 relative">
+      <div className="border-x-2 border-b-2 border-slate-900 bg-white/50 relative">
           {items.map((item, index) => (
-            <div key={item.id} className="flex w-full border-b border-slate-300 last:border-0">
+            <div key={item.id} className="flex w-full border-b border-slate-400 last:border-0">
                <div className="py-4 px-6 w-[15%] text-slate-800 font-medium text-center">{index + 1}.</div>
                <div className="py-4 px-6 w-[60%] text-slate-800 font-medium whitespace-pre-wrap">{item.description}</div>
                <div className="py-4 px-6 w-[25%] text-right font-bold text-slate-900">
