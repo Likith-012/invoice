@@ -73,6 +73,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   // Find the currently active custom theme if it exists
   const activeCustomTheme = customThemes.find(t => t.id === templateId);
+  // Get active theme (either custom or default)
+  const activeTheme = activeCustomTheme || DEFAULT_THEMES[templateId];
+
+  // Helper to safely get config values
+  const getConfig = (key: keyof NonNullable<InvoiceTheme['customConfig']>, def: number) => {
+    return activeTheme?.customConfig?.[key] ?? def;
+  };
 
   if (!isOpen) return null;
 
@@ -209,6 +216,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const updateActiveThemeConfig = (key: keyof NonNullable<InvoiceTheme['customConfig']>, value: number) => {
     if (activeCustomTheme && onUpdateCustomThemeDetails) {
+        // Edit existing custom theme
         const updatedTheme = {
             ...activeCustomTheme,
             customConfig: {
@@ -217,6 +225,29 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             }
         };
         onUpdateCustomThemeDetails(updatedTheme);
+    } else if (!activeCustomTheme && onAddTheme && onUpdateTemplate) {
+        // Edit standard theme -> Auto Clone
+        const standardTheme = DEFAULT_THEMES[templateId];
+        if (standardTheme) {
+            const newThemeId = `custom-${uuidv4()}`;
+            const clonedTheme: InvoiceTheme = {
+                ...JSON.parse(JSON.stringify(standardTheme)),
+                id: newThemeId,
+                name: `${standardTheme.name} (Custom)`,
+                isCustom: true,
+                customConfig: {
+                    ...standardTheme.customConfig,
+                    logoScale: 100, logoX: 0, logoY: 0,
+                    watermarkScale: 100, watermarkX: 0, watermarkY: 0,
+                    backgroundOpacity: 100, backgroundScale: 100,
+                    backgroundPositionX: 50, backgroundPositionY: 50,
+                    marginTop: 0, marginBottom: 0,
+                    [key]: value // Apply the specific change immediately
+                }
+            };
+            onAddTheme(clonedTheme);
+            onUpdateTemplate(newThemeId);
+        }
     }
   };
 
@@ -467,7 +498,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                            </button>
                       </div>
 
-                      {/* Customize Standard Theme Call to Action */}
+                      {/* Customize Standard Theme Call to Action - Only show if current theme is standard */}
                       {!activeCustomTheme && (
                         <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
                             <div>
@@ -484,12 +515,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       )}
 
                       {/* Adjust Active Custom Template */}
-                      {activeCustomTheme && (
-                        <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                      <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
                            <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
                              <Sliders size={16} className="text-blue-600"/>
-                             Adjust Selected Template
+                             Adjust Template Layout
                            </h4>
+                           
+                           {!activeCustomTheme && (
+                               <div className="mb-4 bg-blue-100 p-2 rounded text-xs text-blue-700 flex items-start gap-2">
+                                   <Copy size={12} className="mt-0.5 shrink-0" />
+                                   <span>Adjusting these settings will automatically create a custom copy of this template.</span>
+                               </div>
+                           )}
+
                            <div className="space-y-4 h-[250px] overflow-y-auto pr-2">
                              
                              {/* Background Controls */}
@@ -499,11 +537,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                   <div>
                                     <div className="flex justify-between text-xs text-slate-500 mb-1">
                                         <span>Opacity</span>
-                                        <span>{activeCustomTheme.customConfig?.backgroundOpacity ?? 100}%</span>
+                                        <span>{getConfig('backgroundOpacity', 100)}%</span>
                                     </div>
                                     <input 
                                         type="range" min="0" max="100" 
-                                        value={activeCustomTheme.customConfig?.backgroundOpacity ?? 100}
+                                        value={getConfig('backgroundOpacity', 100)}
                                         onChange={(e) => updateActiveThemeConfig('backgroundOpacity', Number(e.target.value))}
                                         className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                                     />
@@ -511,11 +549,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                   <div>
                                     <div className="flex justify-between text-xs text-slate-500 mb-1">
                                         <span>Scale (Zoom)</span>
-                                        <span>{activeCustomTheme.customConfig?.backgroundScale ?? 100}%</span>
+                                        <span>{getConfig('backgroundScale', 100)}%</span>
                                     </div>
                                     <input 
                                         type="range" min="50" max="200" 
-                                        value={activeCustomTheme.customConfig?.backgroundScale ?? 100}
+                                        value={getConfig('backgroundScale', 100)}
                                         onChange={(e) => updateActiveThemeConfig('backgroundScale', Number(e.target.value))}
                                         className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                                     />
@@ -525,7 +563,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                         <div className="text-xs text-slate-500 mb-1">Pos X (%)</div>
                                         <input 
                                         type="number" min="0" max="100" 
-                                        value={activeCustomTheme.customConfig?.backgroundPositionX ?? 50}
+                                        value={getConfig('backgroundPositionX', 50)}
                                         onChange={(e) => updateActiveThemeConfig('backgroundPositionX', Number(e.target.value))}
                                         className="w-full border rounded p-1 text-xs"
                                         />
@@ -534,7 +572,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                         <div className="text-xs text-slate-500 mb-1">Pos Y (%)</div>
                                         <input 
                                         type="number" min="0" max="100" 
-                                        value={activeCustomTheme.customConfig?.backgroundPositionY ?? 50}
+                                        value={getConfig('backgroundPositionY', 50)}
                                         onChange={(e) => updateActiveThemeConfig('backgroundPositionY', Number(e.target.value))}
                                         className="w-full border rounded p-1 text-xs"
                                         />
@@ -550,11 +588,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     <div>
                                         <div className="flex justify-between text-xs text-slate-500 mb-1">
                                         <span>Content Top</span>
-                                        <span>{activeCustomTheme.customConfig?.marginTop ?? 0} mm</span>
+                                        <span>{getConfig('marginTop', 0)} mm</span>
                                         </div>
                                         <input 
                                         type="range" min="0" max="150" 
-                                        value={activeCustomTheme.customConfig?.marginTop ?? 0}
+                                        value={getConfig('marginTop', 0)}
                                         onChange={(e) => updateActiveThemeConfig('marginTop', Number(e.target.value))}
                                         className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                                         />
@@ -562,11 +600,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     <div>
                                         <div className="flex justify-between text-xs text-slate-500 mb-1">
                                         <span>Content Bottom</span>
-                                        <span>{activeCustomTheme.customConfig?.marginBottom ?? 0} mm</span>
+                                        <span>{getConfig('marginBottom', 0)} mm</span>
                                         </div>
                                         <input 
                                         type="range" min="0" max="150" 
-                                        value={activeCustomTheme.customConfig?.marginBottom ?? 0}
+                                        value={getConfig('marginBottom', 0)}
                                         onChange={(e) => updateActiveThemeConfig('marginBottom', Number(e.target.value))}
                                         className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                                         />
@@ -581,11 +619,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     <div>
                                         <div className="flex justify-between text-xs text-slate-500 mb-1">
                                           <span>Size</span>
-                                          <span>{activeCustomTheme.customConfig?.logoScale ?? 100}%</span>
+                                          <span>{getConfig('logoScale', 100)}%</span>
                                         </div>
                                         <input 
                                           type="range" min="10" max="200" 
-                                          value={activeCustomTheme.customConfig?.logoScale ?? 100}
+                                          value={getConfig('logoScale', 100)}
                                           onChange={(e) => updateActiveThemeConfig('logoScale', Number(e.target.value))}
                                           className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                                         />
@@ -595,7 +633,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                             <div className="text-xs text-slate-500 mb-1">Offset X (mm)</div>
                                             <input 
                                                 type="number" 
-                                                value={activeCustomTheme.customConfig?.logoX ?? 0}
+                                                value={getConfig('logoX', 0)}
                                                 onChange={(e) => updateActiveThemeConfig('logoX', Number(e.target.value))}
                                                 className="w-full border rounded p-1 text-xs"
                                             />
@@ -604,7 +642,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                             <div className="text-xs text-slate-500 mb-1">Offset Y (mm)</div>
                                             <input 
                                                 type="number" 
-                                                value={activeCustomTheme.customConfig?.logoY ?? 0}
+                                                value={getConfig('logoY', 0)}
                                                 onChange={(e) => updateActiveThemeConfig('logoY', Number(e.target.value))}
                                                 className="w-full border rounded p-1 text-xs"
                                             />
@@ -620,11 +658,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     <div>
                                         <div className="flex justify-between text-xs text-slate-500 mb-1">
                                           <span>Size</span>
-                                          <span>{activeCustomTheme.customConfig?.watermarkScale ?? 100}%</span>
+                                          <span>{getConfig('watermarkScale', 100)}%</span>
                                         </div>
                                         <input 
                                           type="range" min="10" max="200" 
-                                          value={activeCustomTheme.customConfig?.watermarkScale ?? 100}
+                                          value={getConfig('watermarkScale', 100)}
                                           onChange={(e) => updateActiveThemeConfig('watermarkScale', Number(e.target.value))}
                                           className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                                         />
@@ -634,7 +672,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                             <div className="text-xs text-slate-500 mb-1">Offset X (mm)</div>
                                             <input 
                                                 type="number" 
-                                                value={activeCustomTheme.customConfig?.watermarkX ?? 0}
+                                                value={getConfig('watermarkX', 0)}
                                                 onChange={(e) => updateActiveThemeConfig('watermarkX', Number(e.target.value))}
                                                 className="w-full border rounded p-1 text-xs"
                                             />
@@ -643,7 +681,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                             <div className="text-xs text-slate-500 mb-1">Offset Y (mm)</div>
                                             <input 
                                                 type="number" 
-                                                value={activeCustomTheme.customConfig?.watermarkY ?? 0}
+                                                value={getConfig('watermarkY', 0)}
                                                 onChange={(e) => updateActiveThemeConfig('watermarkY', Number(e.target.value))}
                                                 className="w-full border rounded p-1 text-xs"
                                             />
@@ -654,7 +692,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
                            </div>
                         </div>
-                      )}
                       
                       {/* Advanced Actions */}
                       <div className="grid grid-cols-2 gap-3 mt-4">

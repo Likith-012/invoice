@@ -104,7 +104,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
        >
          <div style={{ transform: `translate(${wmX}mm, ${wmY}mm) scale(${wmScale})` }}>
            {watermarkSrc ? (
-              <img src={watermarkSrc} className="w-3/4 max-w-[500px] grayscale object-contain" alt="Watermark" />
+              <img src={watermarkSrc} className="w-3/4 max-w-[500px] object-contain" alt="Watermark" />
            ) : (
               <svg width="400" height="400" viewBox="0 0 100 100" fill={theme.colors.primary}>
                  <path d="M50 15 L85 75 H15 L50 15Z" stroke={theme.colors.primary} strokeWidth="5" fill="none" />
