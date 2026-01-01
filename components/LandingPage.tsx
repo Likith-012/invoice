@@ -3,9 +3,10 @@ import { ArrowRight, CheckCircle, Zap, FileText, Shield } from 'lucide-react';
 
 interface LandingPageProps {
   onGetStarted: () => void;
+  onLogin: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin }) => {
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
       {/* Navigation */}
@@ -17,8 +18,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
            <span className="text-xl font-bold text-slate-800 tracking-tight">Invoicify AI</span>
         </div>
         <button 
-          onClick={onGetStarted}
-          className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+          onClick={onLogin}
+          className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors bg-white px-4 py-2 rounded-full border border-slate-200 hover:border-slate-300 shadow-sm"
         >
           Login
         </button>
