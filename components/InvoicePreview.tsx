@@ -32,8 +32,8 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   
   // Custom Config Extraction
   const bgOpacity = theme.customConfig?.backgroundOpacity !== undefined ? theme.customConfig.backgroundOpacity / 100 : 1;
-  const marginTop = theme.customConfig?.marginTop !== undefined ? `${theme.customConfig.marginTop}mm` : undefined;
-  const marginBottom = theme.customConfig?.marginBottom !== undefined ? `${theme.customConfig.marginBottom}mm` : undefined;
+  const marginTop = theme.customConfig?.marginTop !== undefined ? `${theme.customConfig.marginTop}mm` : '30mm';
+  const marginBottom = theme.customConfig?.marginBottom !== undefined ? `${theme.customConfig.marginBottom}mm` : '20mm';
   
   // Background Positioning
   const bgScale = theme.customConfig?.backgroundScale !== undefined ? theme.customConfig.backgroundScale / 100 : 1;
@@ -75,19 +75,21 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
       className={className} 
       style={{ 
         transform: `translate(${logoX}mm, ${logoY}mm) scale(${logoScale})`,
-        transformOrigin: 'right top' 
+        transformOrigin: 'right top',
+        display: 'flex',
+        justifyContent: 'flex-end'
       }}
     >
       <img 
         src={logoSrc || `/logo.png?t=${timestamp}`}
         alt="Logo" 
-        className="h-20 w-auto object-contain"
+        style={{ height: '70px', width: 'auto', objectFit: 'contain' }}
         onError={(e) => {
            e.currentTarget.style.display = 'none';
            document.getElementById(`fallback-${templateId}`)?.classList.remove('hidden');
         }}
       />
-      <div id={`fallback-${templateId}`} className="hidden font-bold text-2xl tracking-tighter border-2 border-current px-2 py-1 inline-block">
+      <div id={`fallback-${templateId}`} className="hidden font-bold text-2xl tracking-tighter border-2 border-current px-2 py-1 inline-block" style={{ color: theme.colors.primary }}>
         {sender.name.substring(0,2).toUpperCase()}
       </div>
     </div>
@@ -104,7 +106,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
        >
          <div style={{ transform: `translate(${wmX}mm, ${wmY}mm) scale(${wmScale})` }}>
            {watermarkSrc ? (
-              <img src={watermarkSrc} className="w-[500px] object-contain" alt="Watermark" />
+              <img src={watermarkSrc} style={{ width: '500px', objectFit: 'contain' }} alt="Watermark" />
            ) : (
               <svg width="400" height="400" viewBox="0 0 100 100" fill={theme.colors.primary}>
                  <path d="M50 15 L85 75 H15 L50 15Z" stroke={theme.colors.primary} strokeWidth="5" fill="none" />
@@ -116,68 +118,63 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     );
   };
 
-  // --- STANDARD LAYOUT IMPLEMENTATION (Matches "Adversity Solutions" Screenshot) ---
-
   const TopWave = () => (
     <div className="absolute top-0 left-0 right-0 h-40 z-0 overflow-hidden pointer-events-none">
-        <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full">
-            <path fill={theme.colors.accent} fillOpacity="1" d="M0,0L1440,0L1440,60C1100,60 1000,120 0,60Z"></path>
-            <path fill={theme.colors.primary} fillOpacity="1" d="M0,0L1440,0L1440,40C1100,40 1000,100 0,40Z"></path>
+        <svg width="100%" height="160" viewBox="0 0 1440 320" preserveAspectRatio="none">
+            <path fill={theme.colors.accent} d="M0,0L1440,0L1440,60C1100,60 1000,120 0,60Z"></path>
+            <path fill={theme.colors.primary} d="M0,0L1440,0L1440,40C1100,40 1000,100 0,40Z"></path>
         </svg>
     </div>
   );
 
   const BottomWave = () => (
     <div className="absolute bottom-0 left-0 right-0 h-40 z-0 overflow-hidden flex items-end pointer-events-none">
-         <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full">
+         <svg width="100%" height="160" viewBox="0 0 1440 320" preserveAspectRatio="none">
              <path fill={theme.colors.accent} fillOpacity="0.4" d="M0,320L1440,320L1440,220C1000,300 600,200 0,300Z"></path>
-             <path fill={theme.colors.primary} fillOpacity="1" d="M0,320L1440,320L1440,300C1000,300 400,280 0,320Z"></path>
-             <path fill={theme.colors.accent} fillOpacity="1" d="M0,320L1440,320L1440,280C1200,320 800,320 0,320Z"></path>
+             <path fill={theme.colors.primary} d="M0,320L1440,320L1440,300C1000,300 400,280 0,320Z"></path>
+             <path fill={theme.colors.accent} d="M0,320L1440,320L1440,280C1200,320 800,320 0,320Z"></path>
          </svg>
     </div>
   );
 
   const ReferenceTable = () => (
-    <div className="relative z-10 w-full mb-6">
-      {/* Table Header */}
-      <div className="flex w-full" style={{ backgroundColor: theme.colors.primary, color: 'white' }}>
-          <div className="py-2.5 px-4 text-left w-[15%] font-serif font-bold uppercase tracking-widest text-xs">Item</div>
-          <div className="py-2.5 px-4 text-left w-[60%] font-serif font-bold uppercase tracking-widest text-xs">Description</div>
-          <div className="py-2.5 px-4 text-right w-[25%] font-serif font-bold uppercase tracking-widest text-xs">Amount</div>
+    <div className="relative z-10 w-full mb-4">
+      {/* Table Header - Explicit Styles for PDF Engine */}
+      <div className="flex w-full" style={{ backgroundColor: theme.colors.primary, color: '#ffffff' }}>
+          <div className="py-2.5 px-4 text-left w-[15%] font-serif font-bold uppercase tracking-widest text-[10px]">Item</div>
+          <div className="py-2.5 px-4 text-left w-[60%] font-serif font-bold uppercase tracking-widest text-[10px]">Description</div>
+          <div className="py-2.5 px-4 text-right w-[25%] font-serif font-bold uppercase tracking-widest text-[10px]">Amount</div>
       </div>
       
-      {/* Table Body */}
-      <div className="border-x-2 border-b-2 border-slate-900 bg-white/50 relative">
+      {/* Table Body - Explicit Styles */}
+      <div style={{ borderLeft: '2px solid #000', borderRight: '2px solid #000', borderBottom: '2px solid #000', backgroundColor: 'rgba(255, 255, 255, 0.5)' }} className="relative">
           {items.map((item, index) => (
-            <div key={item.id} className="flex w-full border-b border-slate-400 last:border-0">
-               <div className="py-3 px-4 w-[15%] text-slate-800 font-medium text-center text-sm">{index + 1}.</div>
-               <div className="py-3 px-4 w-[60%] text-slate-800 font-medium whitespace-pre-wrap text-sm">{item.description}</div>
-               <div className="py-3 px-4 w-[25%] text-right font-bold text-slate-900 text-sm">
+            <div key={item.id} className="flex w-full" style={{ borderBottom: index === items.length - 1 ? 'none' : '1px solid #94a3b8' }}>
+               <div className="py-3 px-4 w-[15%] text-slate-800 font-medium text-center text-xs">{index + 1}.</div>
+               <div className="py-3 px-4 w-[60%] text-slate-800 font-medium whitespace-pre-wrap text-xs">{item.description}</div>
+               <div className="py-3 px-4 w-[25%] text-right font-bold text-slate-900 text-xs">
                   {currencyFormatter.format(item.quantity * item.unitPrice).replace('₹', '₹ ')}
                </div>
             </div>
           ))}
-          {/* Removed fixed height spacer to allow content to collapse naturally and fit on page */}
       </div>
     </div>
   );
 
-  // --- MAIN RENDER ---
-  
   // Use h-full to fill parent container (which is fixed A4 in export)
-  const containerClass = `bg-white shadow-2xl w-[210mm] min-w-[210mm] min-h-[297mm] mx-auto relative flex flex-col overflow-hidden print-exact-a4 ${theme.font === 'serif' ? 'font-serif' : theme.font === 'mono' ? 'font-mono' : 'font-sans'}`;
+  const containerClass = `bg-white w-[210mm] min-w-[210mm] min-h-[297mm] mx-auto relative flex flex-col overflow-hidden ${theme.font === 'serif' ? 'font-serif' : theme.font === 'mono' ? 'font-mono' : 'font-sans'}`;
 
-  // Use the reference design for standard layout
+  // Rendering Standard Layout with more explicit attributes for PDF capture
   if (theme.layout === 'standard') {
       return (
-        <div className={containerClass}>
-            {/* Background Image or Waves */}
+        <div className={containerClass} style={{ backgroundColor: '#ffffff', colorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}>
+            {/* Background Image */}
             {theme.backgroundImage ? (
                 <div className="absolute inset-0 z-0 overflow-hidden" style={{ opacity: bgOpacity }}>
                     <img 
                         src={theme.backgroundImage} 
-                        className="w-full h-full object-cover" 
                         style={{ 
+                            width: '100%', height: '100%', objectFit: 'cover',
                             objectPosition: `${bgX}% ${bgY}%`,
                             transform: `scale(${bgScale})`,
                             transformOrigin: `${bgX}% ${bgY}%`
@@ -193,102 +190,85 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             )}
 
             <div 
-                className="relative z-10 px-12 pt-12 flex-grow flex flex-col"
-                style={{ paddingTop: marginTop ? marginTop : '3.5rem', paddingBottom: marginBottom }}
+                className="relative z-10 px-12 flex-grow flex flex-col"
+                style={{ paddingTop: marginTop, paddingBottom: marginBottom }}
             >
-                {/* Header Section - Reduced Margins */}
-                <div className="flex justify-between items-start mb-8">
-                    <div className="mt-6">
-                        <h1 className="text-4xl font-serif text-slate-900 mb-3 tracking-tight">
+                {/* Header */}
+                <div className="flex justify-between items-start mb-6">
+                    <div className="mt-4">
+                        <h1 className="text-4xl font-serif text-slate-900 mb-2 tracking-tight">
                             {isQuotation ? 'QUOTATION' : 'INVOICE'}
                         </h1>
-                        <div className="text-sm text-slate-700 space-y-1">
-                            <p><span className="font-medium text-slate-900">
-                                {isQuotation ? 'Invoice Number:' : 'Invoice Number:'}
-                            </span> {data.invoiceNumber}</p>
-                            <p><span className="font-medium text-slate-900">Date:</span> {formatDate(data.date)}</p>
+                        <div className="text-xs text-slate-700 space-y-0.5">
+                            <p><span className="font-bold text-slate-900">Document #:</span> {data.invoiceNumber}</p>
+                            <p><span className="font-bold text-slate-900">Date:</span> {formatDate(data.date)}</p>
                         </div>
                     </div>
                     <div className="text-right">
-                        <Logo className="mb-2 flex justify-end" />
+                        <Logo />
                     </div>
                 </div>
 
-                {/* Addresses - Reduced Margins */}
-                <div className="flex gap-8 mb-8">
+                {/* Addresses */}
+                <div className="flex gap-4 mb-8">
                     <div className="w-1/2">
-                        <h3 className="font-bold text-xs uppercase mb-2 tracking-wide text-slate-900">
+                        <h3 className="font-bold text-[10px] uppercase mb-2 tracking-widest text-slate-900 border-b border-slate-200 pb-1">
                             {isQuotation ? 'QUOTATION TO:' : 'BILL TO:'}
                         </h3>
                         {client ? (
-                            <div className="text-sm text-slate-800 leading-relaxed font-medium">
-                                <p className="text-base mb-1">{client.name}</p>
-                                <p className="whitespace-pre-line mb-1 text-xs">{client.address}</p>
-                                {client.gstin && <p className="text-xs">GSTIN: {client.gstin}</p>}
-                                {client.vatId && <p className="text-xs">VAT: {client.vatId}</p>}
+                            <div className="text-slate-800 font-medium">
+                                <p className="text-sm font-bold mb-1">{client.name}</p>
+                                <p className="whitespace-pre-line text-[10px] leading-normal">{client.address}</p>
+                                {client.gstin && <p className="text-[10px] mt-1">GSTIN: {client.gstin}</p>}
                             </div>
                         ) : (
-                            <p className="text-slate-400 italic">Select a client...</p>
+                            <p className="text-slate-300 text-[10px] italic">No client selected.</p>
                         )}
                     </div>
-                    <div className="w-1/2 pl-8">
-                        <h3 className="font-bold text-xs uppercase mb-2 tracking-wide text-slate-900">FROM:</h3>
-                         <div className="text-sm text-slate-800 leading-relaxed font-medium">
-                            <p className="text-base mb-1">{sender.name}</p>
-                            <p className="whitespace-pre-line mb-1 text-xs">{sender.address}</p>
+                    <div className="w-1/2 pl-4">
+                        <h3 className="font-bold text-[10px] uppercase mb-2 tracking-widest text-slate-900 border-b border-slate-200 pb-1">FROM:</h3>
+                         <div className="text-slate-800 font-medium">
+                            <p className="text-sm font-bold mb-1">{sender.name}</p>
+                            <p className="whitespace-pre-line text-[10px] leading-normal">{sender.address}</p>
                          </div>
                     </div>
                 </div>
 
-                {/* Table - No Spacer */}
+                {/* Table */}
                 <div className="relative mb-6">
                     <Watermark />
                     <ReferenceTable />
                 </div>
 
-                {/* Footer Section - Pushed to bottom but with controlled margins */}
-                <div className="mt-auto mb-16 relative z-10">
-                     <div className="flex gap-8 items-start">
-                         {/* Left: Payment Info */}
-                         <div className="w-[60%] text-sm">
-                             {isQuotation ? (
-                                <>
-                                  <h3 className="font-serif font-bold uppercase mb-2 text-slate-900 text-sm">Terms & Conditions:</h3>
-                                  <div className="text-slate-800 font-medium space-y-1 text-xs">
-                                    {data.notes ? (
-                                        <p className="whitespace-pre-line">{data.notes}</p>
-                                    ) : (
-                                        <>
-                                            <p>1. 50% Advance</p>
-                                            <p>2. 50% Post Completion of work</p>
-                                        </>
-                                    )}
-                                  </div>
-                                </>
-                             ) : (
-                                <>
-                                   <h3 className="font-serif font-bold uppercase mb-2 text-slate-900 text-sm">PAYMENT INFORMATION:</h3>
-                                   <div className="text-slate-800 font-bold space-y-1 text-xs">
-                                       {sender.accountName && <p>Name: {sender.accountName}</p>}
-                                       {sender.accountNumber && <p>Account: {sender.accountNumber}</p>}
-                                       {sender.pan && <p>PAN : {sender.pan}</p>}
-                                       {sender.branch && <p>Branch: {sender.branch}</p>}
-                                       {sender.ifsCode && <p>IFS code: {sender.ifsCode}</p>}
-                                       {sender.mobile && <p className="mt-2">Mobile No: {sender.mobile}</p>}
-                                   </div>
-                                </>
-                             )}
+                {/* Footer and Totals */}
+                <div className="mt-auto mb-12">
+                     <div className="flex gap-6 items-start">
+                         <div className="w-[60%]">
+                             <h3 className="font-serif font-bold uppercase mb-2 text-slate-900 text-[10px] tracking-widest">
+                                {isQuotation ? 'Terms & Conditions:' : 'Payment Information:'}
+                             </h3>
+                             <div className="text-slate-700 font-medium space-y-0.5 text-[9px] leading-tight">
+                                {isQuotation ? (
+                                    <p className="whitespace-pre-line">{data.notes || "1. 50% Advance\n2. Balance on delivery"}</p>
+                                ) : (
+                                    <>
+                                        {sender.accountName && <p>Name: {sender.accountName}</p>}
+                                        {sender.accountNumber && <p>Account: {sender.accountNumber}</p>}
+                                        {sender.ifsCode && <p>IFS Code: {sender.ifsCode}</p>}
+                                        {sender.mobile && <p className="mt-2">Mobile: {sender.mobile}</p>}
+                                    </>
+                                )}
+                             </div>
                          </div>
 
-                         {/* Right: Totals Box */}
                          <div className="w-[40%]">
-                             <div className="border-2 border-slate-900 bg-white">
-                                 <div className="flex justify-between p-3 text-slate-800 font-medium bg-white">
+                             <div style={{ border: '2px solid #000', backgroundColor: '#ffffff' }}>
+                                 <div className="flex justify-between p-2 text-slate-800 font-bold text-xs">
                                      <span>Sub Total:</span>
                                      <span>{currencyFormatter.format(subtotal).replace('₹', '₹ ')}</span>
                                  </div>
-                                 <div className="p-3 text-white font-bold text-lg flex justify-between items-center border-t-2 border-slate-900" style={{ backgroundColor: theme.colors.primary }}>
-                                     <span className="uppercase tracking-widest font-serif">TOTAL:</span>
+                                 <div className="p-2 text-white font-bold text-base flex justify-between items-center" style={{ backgroundColor: theme.colors.primary, borderTop: '2px solid #000' }}>
+                                     <span className="uppercase tracking-widest font-serif text-sm">TOTAL:</span>
                                      <span>{currencyFormatter.format(total).replace('₹', '₹ ')}/-</span>
                                  </div>
                              </div>
@@ -296,211 +276,63 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                      </div>
                 </div>
                 
-                {/* Website / Bottom Text */}
-                <div className="absolute bottom-6 left-0 right-0 text-center relative z-20">
-                     <p className="flex items-center justify-center gap-2 text-slate-500 text-sm">
-                        <span className="text-lg">🌐</span> {sender.website || 'www.example.com'}
+                {/* Website Footnote */}
+                <div className="absolute bottom-6 left-0 right-0 text-center">
+                     <p className="flex items-center justify-center gap-2 text-slate-500 text-[10px] font-bold">
+                        🌐 {sender.website || 'www.adversitysolutions.in'}
                      </p>
                      {!isQuotation && (
-                        <p className="absolute left-12 bottom-0 text-[10px] text-slate-500 font-medium">*not registered under gst</p>
+                        <p className="absolute left-12 bottom-0 text-[8px] text-slate-400 font-medium">*not registered under gst</p>
                      )}
                 </div>
-
             </div>
         </div>
       );
   }
 
-  // Fallback for Sidebar/Minimal if selected
-  if (theme.layout === 'sidebar') {
-     return (
-      <div className={containerClass}>
-         {theme.backgroundImage && (
-            <div className="absolute inset-0 z-0 overflow-hidden" style={{ opacity: bgOpacity }}>
-                <img 
-                    src={theme.backgroundImage} 
-                    className="w-full h-full object-cover" 
-                    style={{ 
-                        objectPosition: `${bgX}% ${bgY}%`,
-                        transform: `scale(${bgScale})`,
-                        transformOrigin: `${bgX}% ${bgY}%`
-                    }}
-                    alt="" 
-                />
-            </div>
-         )}
-         <div className="relative z-10 flex w-full h-full flex-grow">
-            <div className="w-[32%] min-h-[297mm] p-8 flex flex-col" style={{ backgroundColor: theme.backgroundImage ? `rgba(0,0,0,${Math.max(0, 0.8 * bgOpacity)})` : (theme.colors.sidebarBg || theme.colors.primary), color: theme.colors.sidebarText || 'white' }}>
-                <div className="mb-12"><Logo className="invert brightness-0 origin-top-left" /></div>
-                <div className="mb-8">
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-4 opacity-70 border-b border-white/20 pb-2">From</h3>
-                <p className="font-bold text-lg leading-tight mb-2">{sender.name}</p>
-                <p className="text-sm whitespace-pre-line opacity-80">{sender.address}</p>
-                <p className="text-sm mt-4 opacity-80">{sender.email}</p>
-                <p className="text-sm opacity-80">{sender.website}</p>
-                </div>
-                <div className="mt-auto">
-                {!isQuotation && (
-                  <>
-                    <h3 className="text-xs font-bold uppercase tracking-widest mb-4 opacity-70 border-b border-white/20 pb-2">Bank Details</h3>
-                    <div className="text-sm space-y-2 opacity-90">
-                        <p>{sender.accountName}</p>
-                        <p>{sender.accountNumber}</p>
-                        <p>{sender.ifsCode}</p>
-                    </div>
-                  </>
-                )}
-                </div>
-            </div>
-            <div className="w-[68%] p-10 flex flex-col relative" style={{ backgroundColor: theme.backgroundImage ? `rgba(255,255,255,${0.95 * bgOpacity})` : 'transparent', paddingTop: marginTop, paddingBottom: marginBottom }}>
-                <div className="flex justify-between items-start mb-12">
-                <div>
-                    <h1 className="text-4xl font-bold uppercase tracking-tight text-slate-900 mb-1">{isQuotation ? 'Quotation' : 'Invoice'}</h1>
-                    <span className="text-slate-400 text-sm"># {data.invoiceNumber}</span>
-                </div>
-                <div className="text-right">
-                    <p className="text-sm text-slate-500">Date</p>
-                    <p className="font-medium">{formatDate(data.date)}</p>
-                </div>
-                </div>
-                <div className="mb-10">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Bill To</h3>
-                {client ? (
-                    <div>
-                        <p className="text-xl font-bold text-slate-800">{client.name}</p>
-                        <p className="text-sm text-slate-600 whitespace-pre-line mt-1">{client.address}</p>
-                    </div>
-                ) : <span className="text-slate-300">Select Client</span>}
-                </div>
-                <div className="relative flex-grow">
-                <Watermark />
-                <div className="relative z-10 w-full mb-8">
-                    <table className="w-full border-collapse">
-                        <thead>
-                        <tr style={{ color: theme.colors.primary }}>
-                            <th className="py-2 px-2 text-left w-[10%] uppercase text-sm border-b border-slate-300">Item</th>
-                            <th className="py-2 px-2 text-left w-[50%] uppercase text-sm border-b border-slate-300">Description</th>
-                            <th className="py-2 px-2 text-right w-[20%] uppercase text-sm border-b border-slate-300">Amount</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {items.map((item, index) => (
-                            <tr key={item.id} className="border-b border-slate-200">
-                            <td className="py-4 px-2 align-top text-slate-600 font-medium">{index + 1}.</td>
-                            <td className="py-4 px-2 align-top text-slate-800 font-medium whitespace-pre-wrap">{item.description}</td>
-                            <td className="py-4 px-2 align-top text-right font-bold text-slate-900">
-                                {currencyFormatter.format(item.quantity * item.unitPrice)}
-                            </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
-                </div>
-                <div className="mt-8 pt-8 border-t border-slate-300">
-                <div className="w-1/2 ml-auto"><div className="w-full">
-       <div className="flex justify-between py-2 border-b border-slate-300">
-          <span className="text-slate-500 text-sm">Subtotal</span>
-          <span className="font-medium">{currencyFormatter.format(subtotal)}</span>
-       </div>
-       <div 
-         className="flex justify-between py-3 mt-2 font-bold text-lg"
-         style={{ color: theme.colors.primary }}
-       >
-          <span>TOTAL</span>
-          <span>{currencyFormatter.format(total)}</span>
-       </div>
-    </div></div>
-                </div>
-            </div>
-         </div>
-      </div>
-    );
-  }
-
-  // Minimal Layout (Simplified)
+  // Simplified Layout for Sidebar and Minimal - using similar logic for robustness
   return (
-        <div className={`${containerClass} p-16`} style={{ paddingTop: marginTop, paddingBottom: marginBottom }}>
-           {theme.backgroundImage && (
-                <div className="absolute inset-0 z-0 overflow-hidden" style={{ opacity: bgOpacity }}>
-                    <img 
-                        src={theme.backgroundImage} 
-                        className="w-full h-full object-cover" 
-                        style={{ 
-                            objectPosition: `${bgX}% ${bgY}%`,
-                            transform: `scale(${bgScale})`,
-                            transformOrigin: `${bgX}% ${bgY}%`
-                        }}
-                        alt="" 
-                    />
+    <div className={containerClass} style={{ backgroundColor: '#ffffff' }}>
+        <div className="p-12 flex flex-col h-full relative z-10">
+            <div className="flex justify-between mb-8">
+                <Logo />
+                <div className="text-right">
+                    <h1 className="text-3xl font-bold" style={{ color: theme.colors.primary }}>{isQuotation ? 'QUOTATION' : 'INVOICE'}</h1>
+                    <p className="text-sm font-bold text-slate-500">#{data.invoiceNumber}</p>
                 </div>
-            )}
-           <div className="relative z-10 bg-white/90 p-8 rounded-lg min-h-full flex flex-col flex-grow">
-                <div className="text-center mb-12 border-b-2 border-slate-900 pb-8" style={{ borderColor: theme.colors.primary }}>
-                    <Logo className="h-16 w-auto mx-auto mb-4 origin-center" />
-                    <h1 className="text-3xl font-bold uppercase tracking-widest" style={{ color: theme.colors.primary }}>{sender.name}</h1>
-                    <p className="text-xs mt-2 uppercase tracking-wider">{sender.website}</p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-8 mb-8">
+                <div>
+                    <h3 className="text-[10px] font-bold uppercase text-slate-400 mb-2">Billing To</h3>
+                    <p className="font-bold text-sm">{client?.name || '---'}</p>
+                    <p className="text-[10px] whitespace-pre-line text-slate-600">{client?.address}</p>
                 </div>
-                <div className="flex justify-between items-end mb-16">
-                    <div>
-                        <h2 className="text-4xl font-bold" style={{ color: theme.colors.text }}>{isQuotation ? 'QUOTATION' : 'INVOICE'}</h2>
-                        <p className="text-sm mt-1"># {data.invoiceNumber} • {formatDate(data.date)}</p>
-                    </div>
-                    <div className="text-right max-w-[250px]">
-                        <p className="text-xs uppercase font-bold mb-1">Bill To:</p>
-                        {client && (
-                        <>
-                            <p className="font-bold">{client.name}</p>
-                            <p className="text-xs whitespace-pre-line">{client.address}</p>
-                        </>
-                        )}
-                    </div>
+                <div>
+                    <h3 className="text-[10px] font-bold uppercase text-slate-400 mb-2">From</h3>
+                    <p className="font-bold text-sm">{sender.name}</p>
+                    <p className="text-[10px] whitespace-pre-line text-slate-600">{sender.address}</p>
                 </div>
-                <div className="relative flex-grow">
-                    <Watermark />
-                    <div className="relative z-10 w-full mb-8">
-                      <table className="w-full border-collapse">
-                        <thead>
-                          <tr style={{ color: theme.colors.primary }}>
-                            <th className="py-2 px-2 text-left w-[10%] uppercase text-sm border-b-2 border-slate-900">Item</th>
-                            <th className="py-2 px-2 text-left w-[50%] uppercase text-sm border-b-2 border-slate-900">Description</th>
-                            <th className="py-2 px-2 text-right w-[20%] uppercase text-sm border-b-2 border-slate-900">Amount</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {items.map((item, index) => (
-                            <tr key={item.id} className="border-b border-slate-200">
-                              <td className="py-4 px-2 align-top text-slate-600 font-medium">{index + 1}.</td>
-                              <td className="py-4 px-2 align-top text-slate-800 font-medium whitespace-pre-wrap">{item.description}</td>
-                              <td className="py-4 px-2 align-top text-right font-bold text-slate-900">
-                                {currencyFormatter.format(item.quantity * item.unitPrice)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+            </div>
+
+            <div className="flex-grow">
+                <ReferenceTable />
+            </div>
+
+            <div className="flex justify-end mt-8">
+                <div className="w-1/3 p-4 rounded-lg" style={{ backgroundColor: theme.colors.primary + '10' }}>
+                    <div className="flex justify-between text-xs mb-2">
+                        <span className="text-slate-500 font-bold">Subtotal</span>
+                        <span className="font-bold">{currencyFormatter.format(subtotal)}</span>
                     </div>
-                </div>
-                <div className="flex justify-between items-start mt-8 pt-8 border-t-2 border-slate-900" style={{ borderColor: theme.colors.primary }}>
-                    <div className="w-1/2 text-xs">
-                        {!isQuotation && (
-                          <>
-                            <p className="font-bold uppercase mb-2">Payment Info:</p>
-                            <p>{sender.accountName}</p>
-                            <p>{sender.accountNumber} • {sender.ifsCode}</p>
-                            <p>{sender.branch}</p>
-                          </>
-                        )}
-                    </div>
-                    <div className="w-1/3 text-right">
-                        <div className="flex justify-between text-lg font-bold">
-                        <span>Total</span>
+                    <div className="flex justify-between font-bold text-lg pt-2 border-t border-slate-200" style={{ color: theme.colors.primary }}>
+                        <span>TOTAL</span>
                         <span>{currencyFormatter.format(total)}</span>
-                        </div>
                     </div>
                 </div>
-           </div>
+            </div>
         </div>
+    </div>
   );
 };
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   InvoiceData, 
@@ -266,12 +267,10 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
   };
 
   const handleExport = () => {
-    // Auto-save to history on export
     saveToHistory(invoiceData);
-
     setIsExporting(true);
     
-    // Allow React to render the export container if needed (although it is always mounted now)
+    // Give browser time to finish any pending style updates in the hidden container
     setTimeout(() => {
         const element = exportRef.current;
         if (!element) {
@@ -282,15 +281,17 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
         const opt = {
             margin: 0,
             filename: `${invoiceData.invoiceNumber || 'invoice'}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
+            image: { type: 'jpeg', quality: 1.0 },
             html2canvas: { 
-                scale: 2, // 2 is optimal for mobile performance vs quality
+                scale: 2, 
                 useCORS: true, 
                 logging: false,
-                // Critical for mobile: force desktop width (A4 width in px) to prevent layout shifts/half-page rendering
-                windowWidth: 794 
+                letterRendering: true,
+                // A4 is roughly 794px wide at 96dpi. Setting windowWidth forces correct scaling.
+                windowWidth: 794,
+                backgroundColor: '#ffffff'
             },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
         };
 
         const html2pdf = (window as any).html2pdf;
@@ -299,16 +300,14 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
                 setIsExporting(false);
             }).catch((err: any) => {
                 console.error("PDF generation failed:", err);
-                alert("Failed to generate PDF. Falling back to print.");
-                window.print();
+                alert("Export failed. Please try again.");
                 setIsExporting(false);
             });
         } else {
-            console.warn("html2pdf library not loaded");
-            window.print();
             setIsExporting(false);
+            window.print();
         }
-    }, 500);
+    }, 800);
   };
 
   const handleEmail = () => {
@@ -629,7 +628,6 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
           </div>
 
           <div className="p-2 md:p-8 lg:p-12 flex justify-center items-start min-h-full overflow-hidden pb-20">
-             {/* Responsive Scaling for Visual Preview */}
              <div className="transform scale-[0.42] sm:scale-[0.6] md:scale-[0.85] lg:scale-100 origin-top shadow-2xl transition-transform duration-300 bg-white">
                 <InvoicePreview 
                   data={invoiceData} 
@@ -647,13 +645,12 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
 
       {/* 
         OFF-SCREEN EXPORT CONTAINER
-        Positioned off-screen to remain in DOM for html2canvas but invisible to user.
-        Fixed width ensures consistency on mobile.
-        Fixed height ensures 1 page by default (296mm to account for pixel rounding issues vs 297mm A4).
-        Overflow hidden cuts off any slight spillover to prevent page 2.
+        Positioned off-screen to remain in DOM for capture.
+        Strict A4 sizing and overflow hidden to enforce 1-page output.
       */}
-      <div style={{ position: 'fixed', left: '-9999px', top: 0, width: '210mm' }}>
-        <div ref={exportRef} className="w-[210mm] h-[296mm] bg-white overflow-hidden">
+      {/* Fix: Changed zindex to zIndex as per React style property requirements */}
+      <div id="export-root" style={{ position: 'fixed', left: '-2000mm', top: 0, width: '210mm', height: '297mm', zIndex: -1 }}>
+        <div ref={exportRef} className="bg-white overflow-hidden" style={{ width: '210mm', height: '296mm' }}>
             <InvoicePreview 
                 data={invoiceData} 
                 logoSrc={customLogo} 
