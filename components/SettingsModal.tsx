@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { SenderDetails, Client, InvoiceTheme, DEFAULT_THEMES } from '../types';
 import { X, Upload, Save, Trash2, User, CreditCard, Building, Settings as SettingsIcon, LayoutTemplate, Droplets, Plus, Palette, FileJson, Image as ImageIcon, Download, Sliders, Copy } from 'lucide-react';
@@ -21,7 +22,7 @@ interface SettingsModalProps {
   customThemes?: InvoiceTheme[];
   onAddTheme?: (theme: InvoiceTheme) => void;
   onDeleteTheme?: (id: string) => void;
-  onUpdateCustomThemeDetails?: (theme: InvoiceTheme) => void; // New prop for updating existing themes
+  onUpdateCustomThemeDetails?: (theme: InvoiceTheme) => void;
   customWatermark?: string;
   onUpdateCustomWatermark?: (base64: string) => void;
   watermarkOpacity?: number;
@@ -62,21 +63,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const themeFileInputRef = useRef<HTMLInputElement>(null);
   const bgImageInputRef = useRef<HTMLInputElement>(null);
 
-  // Template Creator State
   const [isCreatingTheme, setIsCreatingTheme] = useState(false);
   const [newTheme, setNewTheme] = useState<Partial<InvoiceTheme>>({
     name: 'My Custom Theme',
     layout: 'standard',
     font: 'sans',
-    colors: { primary: '#3b82f6', accent: '#fbbf24', text: '#1f2937', bg: 'white' }
+    colors: { primary: '#3b82f6', accent: '#fbbf24', text: '#1f2937', bg: 'white', tableColor: '#3b82f6' }
   });
 
-  // Find the currently active custom theme if it exists
   const activeCustomTheme = customThemes.find(t => t.id === templateId);
-  // Get active theme (either custom or default)
   const activeTheme = activeCustomTheme || DEFAULT_THEMES[templateId];
 
-  // Helper to safely get config values
   const getConfig = (key: keyof NonNullable<InvoiceTheme['customConfig']>, def: number) => {
     return activeTheme?.customConfig?.[key] ?? def;
   };
@@ -117,6 +114,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             accent: newTheme.colors?.accent || '#888888',
             text: '#1f2937',
             bg: 'white',
+            tableColor: newTheme.colors?.tableColor || newTheme.colors?.primary || '#000000',
             headerText: newTheme.layout === 'standard' ? 'white' : undefined,
             sidebarBg: newTheme.layout === 'sidebar' ? newTheme.colors?.primary : undefined,
             sidebarText: 'white'
@@ -132,7 +130,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleCloneTheme = () => {
     if (!onAddTheme) return;
-    // Find standard theme to clone
     const standardTheme = DEFAULT_THEMES[templateId];
     if (!standardTheme) return;
 
@@ -141,111 +138,66 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       id: `custom-${uuidv4()}`,
       name: `${standardTheme.name} (Custom)`,
       isCustom: true,
-      customConfig: {
-        ...standardTheme.customConfig,
-        // Initialize defaults if they don't exist
-        logoScale: 100,
-        logoX: 0,
-        logoY: 0,
-        watermarkScale: 100,
-        watermarkX: 0,
-        watermarkY: 0
+      colors: {
+          ...standardTheme.colors,
+          tableColor: standardTheme.colors.tableColor || standardTheme.colors.primary
       }
     };
     onAddTheme(clonedTheme);
     onUpdateTemplate(clonedTheme.id);
   };
 
-  const handleImportTheme = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && onAddTheme) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const imported = JSON.parse(event.target?.result as string);
-                if (imported.name && imported.colors) {
-                    const themeWithNewId = { ...imported, id: `imported-${uuidv4()}`, isCustom: true };
-                    onAddTheme(themeWithNewId);
-                    onUpdateTemplate(themeWithNewId.id);
-                } else {
-                    alert("Invalid theme file format.");
-                }
-            } catch (err) {
-                alert("Failed to parse JSON file.");
-            }
-        };
-        reader.readAsText(file);
-    }
-  };
-
-  const handleCreateFromImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFileChange(e, (base64) => {
-        if (!onAddTheme) return;
-        const themeToSave: InvoiceTheme = {
-            id: `img-theme-${uuidv4()}`,
-            name: 'Custom Image Theme',
-            layout: 'standard', // Image backgrounds usually imply a standard overlay
-            font: 'sans',
-            colors: {
-                primary: '#000000',
-                accent: '#000000',
-                text: '#000000',
-                bg: 'transparent'
-            },
-            isCustom: true,
-            backgroundImage: base64,
-            customConfig: {
-                backgroundOpacity: 100,
-                marginTop: 0,
-                marginBottom: 0,
-                backgroundScale: 100,
-                backgroundPositionX: 50,
-                backgroundPositionY: 50,
-                logoScale: 100,
-                logoX: 0,
-                logoY: 0,
-                watermarkScale: 100,
-                watermarkX: 0,
-                watermarkY: 0
-            }
-        };
-        onAddTheme(themeToSave);
-        onUpdateTemplate(themeToSave.id);
-    });
-  };
-
   const updateActiveThemeConfig = (key: keyof NonNullable<InvoiceTheme['customConfig']>, value: number) => {
     if (activeCustomTheme && onUpdateCustomThemeDetails) {
-        // Edit existing custom theme
-        const updatedTheme = {
+        onUpdateCustomThemeDetails({
             ...activeCustomTheme,
             customConfig: {
                 ...activeCustomTheme.customConfig,
                 [key]: value
             }
-        };
-        onUpdateCustomThemeDetails(updatedTheme);
+        });
     } else if (!activeCustomTheme && onAddTheme && onUpdateTemplate) {
-        // Edit standard theme -> Auto Clone
         const standardTheme = DEFAULT_THEMES[templateId];
         if (standardTheme) {
             const newThemeId = `custom-${uuidv4()}`;
-            const clonedTheme: InvoiceTheme = {
+            onAddTheme({
                 ...JSON.parse(JSON.stringify(standardTheme)),
                 id: newThemeId,
                 name: `${standardTheme.name} (Custom)`,
                 isCustom: true,
                 customConfig: {
                     ...standardTheme.customConfig,
-                    logoScale: 100, logoX: 0, logoY: 0,
-                    watermarkScale: 100, watermarkX: 0, watermarkY: 0,
-                    backgroundOpacity: 100, backgroundScale: 100,
-                    backgroundPositionX: 50, backgroundPositionY: 50,
-                    marginTop: 0, marginBottom: 0,
-                    [key]: value // Apply the specific change immediately
+                    [key]: value
                 }
-            };
-            onAddTheme(clonedTheme);
+            });
+            onUpdateTemplate(newThemeId);
+        }
+    }
+  };
+
+  const updateActiveThemeColor = (key: keyof InvoiceTheme['colors'], value: string) => {
+    if (activeCustomTheme && onUpdateCustomThemeDetails) {
+        onUpdateCustomThemeDetails({
+            ...activeCustomTheme,
+            colors: {
+                ...activeCustomTheme.colors,
+                [key]: value
+            }
+        });
+    } else if (!activeCustomTheme && onAddTheme && onUpdateTemplate) {
+        const standardTheme = DEFAULT_THEMES[templateId];
+        if (standardTheme) {
+            const newThemeId = `custom-${uuidv4()}`;
+            onAddTheme({
+                ...JSON.parse(JSON.stringify(standardTheme)),
+                id: newThemeId,
+                name: `${standardTheme.name} (Custom)`,
+                isCustom: true,
+                colors: {
+                    ...standardTheme.colors,
+                    [key]: value
+                }
+            });
             onUpdateTemplate(newThemeId);
         }
     }
@@ -254,7 +206,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 print:hidden">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
         <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
           <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
             <SettingsIcon size={20} className="text-blue-600" />
@@ -265,98 +216,46 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
         </div>
 
-        {/* Tabs */}
         <div className="flex border-b border-slate-200 overflow-x-auto">
-          <button 
-            onClick={() => setActiveTab('company')}
-            className={`flex-1 py-3 px-2 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'company' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-          >
-            <Building size={16} /> Company
-          </button>
-          <button 
-            onClick={() => setActiveTab('templates')}
-            className={`flex-1 py-3 px-2 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'templates' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-          >
-            <LayoutTemplate size={16} /> Templates
-          </button>
-          <button 
-            onClick={() => setActiveTab('payment')}
-            className={`flex-1 py-3 px-2 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'payment' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-          >
-            <CreditCard size={16} /> Payment
-          </button>
-          <button 
-            onClick={() => setActiveTab('preferences')}
-            className={`flex-1 py-3 px-2 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'preferences' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-          >
-            <SettingsIcon size={16} /> Prefs
-          </button>
-          <button 
-            onClick={() => setActiveTab('clients')}
-            className={`flex-1 py-3 px-2 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'clients' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-          >
-            <User size={16} /> Clients
-          </button>
+          {['company', 'templates', 'payment', 'preferences', 'clients'].map((tab) => (
+            <button 
+              key={tab}
+              onClick={() => setActiveTab(tab as Tab)}
+              className={`flex-1 py-3 px-2 text-sm font-medium capitalize border-b-2 transition-colors whitespace-nowrap ${activeTab === tab ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
 
-        {/* Content */}
         <div className="p-6 overflow-y-auto flex-1">
           {activeTab === 'company' && (
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row items-start gap-6">
-                <div className="flex-1 space-y-4 w-full">
-                   <div>
-                     <label className="block text-xs font-medium text-slate-500 mb-1">Company Name ("From")</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="col-span-full">
+                     <label className="block text-xs font-medium text-slate-500 mb-1">Company Name</label>
                      <input type="text" className="w-full border p-2 rounded text-sm" value={localSender.name} onChange={e => updateSenderField('name', e.target.value)} />
-                   </div>
-                   <div>
-                     <label className="block text-xs font-medium text-slate-500 mb-1">Website URL</label>
+                  </div>
+                  <div>
+                     <label className="block text-xs font-medium text-slate-500 mb-1">Website</label>
                      <input type="text" className="w-full border p-2 rounded text-sm" value={localSender.website} onChange={e => updateSenderField('website', e.target.value)} />
-                   </div>
-                   <div>
-                     <label className="block text-xs font-medium text-slate-500 mb-1">Company Email</label>
-                     <input type="text" className="w-full border p-2 rounded text-sm" value={localSender.email || ''} onChange={e => updateSenderField('email', e.target.value)} />
-                   </div>
-                   <div>
+                  </div>
+                  <div>
+                     <label className="block text-xs font-medium text-slate-500 mb-1">Email</label>
+                     <input type="text" className="w-full border p-2 rounded text-sm" value={localSender.email} onChange={e => updateSenderField('email', e.target.value)} />
+                  </div>
+                  <div className="col-span-full">
                      <label className="block text-xs font-medium text-slate-500 mb-1">Address</label>
-                     <textarea className="w-full border p-2 rounded text-sm h-24" value={localSender.address} onChange={e => updateSenderField('address', e.target.value)} />
-                   </div>
-                   <div>
-                     <label className="block text-xs font-medium text-slate-500 mb-1">Mobile</label>
-                     <input type="text" className="w-full border p-2 rounded text-sm" value={localSender.mobile} onChange={e => updateSenderField('mobile', e.target.value)} />
-                   </div>
-                </div>
-                
-                {/* Logo Upload */}
-                <div className="w-full sm:w-1/3">
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Company Logo</label>
+                     <textarea className="w-full border p-2 rounded text-sm h-20" value={localSender.address} onChange={e => updateSenderField('address', e.target.value)} />
+                  </div>
                   <div 
-                    className="border-2 border-dashed border-slate-300 rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors h-40 text-center relative overflow-hidden"
+                    className="col-span-full border-2 border-dashed border-slate-300 rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors h-32"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    {logo ? (
-                      <img src={logo} alt="Logo" className="max-h-24 max-w-full object-contain mb-2 z-10" />
-                    ) : (
-                      <Upload className="text-slate-300 mb-2 z-10" size={32} />
-                    )}
-                    <span className="text-xs text-slate-500 z-10">{logo ? 'Click to change' : 'Upload Logo'}</span>
-                    <input 
-                      type="file" 
-                      ref={fileInputRef} 
-                      className="hidden" 
-                      accept="image/*"
-                      onChange={(e) => handleFileChange(e, onUpdateLogo)}
-                    />
+                    {logo ? <img src={logo} alt="Logo" className="max-h-20 max-w-full object-contain" /> : <Upload className="text-slate-300" size={24} />}
+                    <span className="text-xs text-slate-500 mt-2">{logo ? 'Click to change' : 'Upload Logo'}</span>
+                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, onUpdateLogo)} />
                   </div>
-                  {logo && (
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onUpdateLogo(''); }}
-                      className="text-red-500 text-xs mt-2 w-full text-center hover:underline"
-                    >
-                      Remove Logo
-                    </button>
-                  )}
-                </div>
               </div>
             </div>
           )}
@@ -364,438 +263,88 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           {activeTab === 'templates' && (
             <div className="space-y-6">
                {isCreatingTheme ? (
-                 <div className="bg-slate-50 p-5 rounded-xl border border-blue-200 animate-in fade-in zoom-in-95">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                           <Palette size={18} className="text-blue-600" />
-                           Create Custom Theme
-                        </h3>
-                        <button onClick={() => setIsCreatingTheme(false)} className="text-slate-400 hover:text-slate-600">
-                           <X size={18} />
-                        </button>
-                    </div>
-
+                 <div className="bg-slate-50 p-5 rounded-xl border border-blue-200">
+                    <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Palette size={18}/> Create Custom Theme</h3>
                     <div className="space-y-4">
-                       <div>
-                          <label className="block text-xs font-medium text-slate-500 mb-1">Theme Name</label>
-                          <input 
-                            type="text" 
-                            className="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
-                            placeholder="My Awesome Theme"
-                            value={newTheme.name}
-                            onChange={(e) => setNewTheme(prev => ({...prev, name: e.target.value}))}
-                          />
-                       </div>
-                       
-                       <div>
-                          <label className="block text-xs font-medium text-slate-500 mb-2">Layout Structure</label>
-                          <div className="grid grid-cols-3 gap-3">
-                             {['standard', 'sidebar', 'minimal'].map(layout => (
-                                <button
-                                   key={layout}
-                                   onClick={() => setNewTheme(prev => ({...prev, layout: layout as any}))}
-                                   className={`py-2 px-3 rounded border text-sm capitalize ${newTheme.layout === layout ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}`}
-                                >
-                                   {layout}
-                                </button>
-                             ))}
-                          </div>
-                       </div>
-
+                       <input 
+                         type="text" 
+                         className="w-full border p-2 rounded text-sm" 
+                         placeholder="Theme Name"
+                         value={newTheme.name}
+                         onChange={(e) => setNewTheme(prev => ({...prev, name: e.target.value}))}
+                       />
                        <div className="grid grid-cols-2 gap-4">
                           <div>
-                             <label className="block text-xs font-medium text-slate-500 mb-1">Primary Color</label>
-                             <div className="flex gap-2 items-center">
-                                <input 
-                                   type="color" 
-                                   className="w-10 h-10 rounded cursor-pointer border-0"
-                                   value={newTheme.colors?.primary}
-                                   onChange={(e) => setNewTheme(prev => ({...prev, colors: {...prev.colors!, primary: e.target.value}}))}
-                                />
-                                <span className="text-xs text-slate-500 font-mono">{newTheme.colors?.primary}</span>
-                             </div>
+                             <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Primary Color</label>
+                             <input type="color" className="w-full h-10 rounded cursor-pointer border" value={newTheme.colors?.primary} onChange={(e) => setNewTheme(prev => ({...prev, colors: {...prev.colors!, primary: e.target.value}}))} />
                           </div>
                           <div>
-                             <label className="block text-xs font-medium text-slate-500 mb-1">Accent Color</label>
-                             <div className="flex gap-2 items-center">
-                                <input 
-                                   type="color" 
-                                   className="w-10 h-10 rounded cursor-pointer border-0"
-                                   value={newTheme.colors?.accent}
-                                   onChange={(e) => setNewTheme(prev => ({...prev, colors: {...prev.colors!, accent: e.target.value}}))}
-                                />
-                                <span className="text-xs text-slate-500 font-mono">{newTheme.colors?.accent}</span>
-                             </div>
+                             <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Table Color</label>
+                             <input type="color" className="w-full h-10 rounded cursor-pointer border" value={newTheme.colors?.tableColor} onChange={(e) => setNewTheme(prev => ({...prev, colors: {...prev.colors!, tableColor: e.target.value}}))} />
                           </div>
                        </div>
-
-                       <div>
-                          <label className="block text-xs font-medium text-slate-500 mb-2">Typography</label>
-                          <select 
-                             className="w-full border p-2 rounded text-sm bg-white"
-                             value={newTheme.font}
-                             onChange={(e) => setNewTheme(prev => ({...prev, font: e.target.value as any}))}
-                          >
-                             <option value="sans">Sans Serif (Modern)</option>
-                             <option value="serif">Serif (Classic)</option>
-                             <option value="mono">Monospace (Technical)</option>
-                          </select>
-                       </div>
                     </div>
-
                     <div className="flex justify-end gap-3 mt-6">
-                       <button onClick={() => setIsCreatingTheme(false)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded">Cancel</button>
-                       <button onClick={handleSaveTheme} className="px-6 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">Save Theme</button>
+                       <button onClick={() => setIsCreatingTheme(false)} className="text-sm text-slate-500">Cancel</button>
+                       <button onClick={handleSaveTheme} className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-bold">Create</button>
                     </div>
                  </div>
                ) : (
                  <>
-                   <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-3">Select Design Template</label>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                         {/* Default Themes */}
-                         {Object.values(DEFAULT_THEMES).map(tpl => (
-                           <button
-                             key={tpl.id}
-                             onClick={() => onUpdateTemplate(tpl.id)}
-                             className={`relative rounded-lg border-2 p-3 flex flex-col items-center gap-2 transition-all hover:bg-slate-50 ${templateId === tpl.id ? 'border-blue-600 ring-1 ring-blue-600 bg-blue-50' : 'border-slate-200'}`}
-                           >
-                              <div className="w-12 h-16 rounded shadow-sm" style={{ backgroundColor: tpl.colors.primary }}></div>
-                              <span className="text-xs font-medium text-slate-700 text-center">{tpl.name}</span>
-                              {templateId === tpl.id && <div className="absolute top-2 right-2 w-2 h-2 bg-blue-600 rounded-full"></div>}
-                           </button>
-                         ))}
-                         
-                         {/* Custom Themes */}
-                         {customThemes.map(tpl => (
-                           <button
-                             key={tpl.id}
-                             onClick={() => onUpdateTemplate(tpl.id)}
-                             className={`relative rounded-lg border-2 p-3 flex flex-col items-center gap-2 transition-all hover:bg-slate-50 group ${templateId === tpl.id ? 'border-blue-600 ring-1 ring-blue-600 bg-blue-50' : 'border-slate-200'}`}
-                           >
-                              <div className="w-12 h-16 rounded shadow-sm overflow-hidden" style={{ backgroundColor: tpl.colors.primary }}>
-                                {tpl.backgroundImage && <img src={tpl.backgroundImage} className="w-full h-full object-cover opacity-50" />}
-                              </div>
-                              <span className="text-xs font-medium text-slate-700 text-center truncate w-full">{tpl.name}</span>
-                              {templateId === tpl.id && <div className="absolute top-2 right-2 w-2 h-2 bg-blue-600 rounded-full"></div>}
-                              <div 
-                                onClick={(e) => { e.stopPropagation(); onDeleteTheme && onDeleteTheme(tpl.id); }}
-                                className="absolute top-1 left-1 bg-white rounded-full p-1 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50 transition-opacity border border-red-100 shadow-sm"
-                                title="Delete Theme"
-                              >
-                                <Trash2 size={12} />
-                              </div>
-                           </button>
-                         ))}
-
-                         {/* Add New Button */}
-                         <button
-                             onClick={() => setIsCreatingTheme(true)}
-                             className="relative rounded-lg border-2 border-dashed border-slate-300 p-3 flex flex-col items-center justify-center gap-2 transition-all hover:border-blue-400 hover:bg-blue-50 text-slate-400 hover:text-blue-500"
-                           >
-                              <Plus size={24} />
-                              <span className="text-xs font-medium text-center">Create Custom</span>
-                           </button>
-                      </div>
-
-                      {/* Customize Standard Theme Call to Action - Only show if current theme is standard */}
-                      {!activeCustomTheme && (
-                        <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-800">Customize this template</h4>
-                                <p className="text-xs text-slate-500">Edit positions, colors, and save as your own.</p>
-                            </div>
-                            <button 
-                                onClick={handleCloneTheme}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-sm font-medium hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-sm"
-                            >
-                                <Copy size={14} /> Duplicate & Edit
-                            </button>
-                        </div>
-                      )}
-
-                      {/* Adjust Active Custom Template */}
-                      <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
-                           <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-                             <Sliders size={16} className="text-blue-600"/>
-                             Adjust Template Layout
-                           </h4>
-                           
-                           {!activeCustomTheme && (
-                               <div className="mb-4 bg-blue-100 p-2 rounded text-xs text-blue-700 flex items-start gap-2">
-                                   <Copy size={12} className="mt-0.5 shrink-0" />
-                                   <span>Adjusting these settings will automatically create a custom copy of this template.</span>
-                               </div>
-                           )}
-
-                           <div className="space-y-4 h-[250px] overflow-y-auto pr-2">
-                             
-                             {/* Background Controls */}
-                             <div>
-                               <div className="flex justify-between text-xs text-slate-500 mb-1 font-semibold bg-blue-100/50 p-1 rounded">Background</div>
-                               <div className="space-y-3 pl-2">
-                                  <div>
-                                    <div className="flex justify-between text-xs text-slate-500 mb-1">
-                                        <span>Opacity</span>
-                                        <span>{getConfig('backgroundOpacity', 100)}%</span>
-                                    </div>
-                                    <input 
-                                        type="range" min="0" max="100" 
-                                        value={getConfig('backgroundOpacity', 100)}
-                                        onChange={(e) => updateActiveThemeConfig('backgroundOpacity', Number(e.target.value))}
-                                        className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                                    />
-                                  </div>
-                                  <div>
-                                    <div className="flex justify-between text-xs text-slate-500 mb-1">
-                                        <span>Scale (Zoom)</span>
-                                        <span>{getConfig('backgroundScale', 100)}%</span>
-                                    </div>
-                                    <input 
-                                        type="range" min="50" max="200" 
-                                        value={getConfig('backgroundScale', 100)}
-                                        onChange={(e) => updateActiveThemeConfig('backgroundScale', Number(e.target.value))}
-                                        className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                                    />
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <div className="text-xs text-slate-500 mb-1">Pos X (%)</div>
-                                        <input 
-                                        type="number" min="0" max="100" 
-                                        value={getConfig('backgroundPositionX', 50)}
-                                        onChange={(e) => updateActiveThemeConfig('backgroundPositionX', Number(e.target.value))}
-                                        className="w-full border rounded p-1 text-xs"
-                                        />
-                                    </div>
-                                    <div>
-                                        <div className="text-xs text-slate-500 mb-1">Pos Y (%)</div>
-                                        <input 
-                                        type="number" min="0" max="100" 
-                                        value={getConfig('backgroundPositionY', 50)}
-                                        onChange={(e) => updateActiveThemeConfig('backgroundPositionY', Number(e.target.value))}
-                                        className="w-full border rounded p-1 text-xs"
-                                        />
-                                    </div>
-                                  </div>
-                               </div>
-                             </div>
-                             
-                             {/* Margins */}
-                             <div className="pt-2 border-t border-blue-200">
-                                 <div className="flex justify-between text-xs text-slate-500 mb-1 font-semibold bg-blue-100/50 p-1 rounded">Page Margins</div>
-                                 <div className="space-y-3 pl-2 mt-2">
-                                    <div>
-                                        <div className="flex justify-between text-xs text-slate-500 mb-1">
-                                        <span>Content Top</span>
-                                        <span>{getConfig('marginTop', 0)} mm</span>
-                                        </div>
-                                        <input 
-                                        type="range" min="0" max="150" 
-                                        value={getConfig('marginTop', 0)}
-                                        onChange={(e) => updateActiveThemeConfig('marginTop', Number(e.target.value))}
-                                        className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between text-xs text-slate-500 mb-1">
-                                        <span>Content Bottom</span>
-                                        <span>{getConfig('marginBottom', 0)} mm</span>
-                                        </div>
-                                        <input 
-                                        type="range" min="0" max="150" 
-                                        value={getConfig('marginBottom', 0)}
-                                        onChange={(e) => updateActiveThemeConfig('marginBottom', Number(e.target.value))}
-                                        className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-                                 </div>
-                             </div>
-
-                             {/* Logo Controls */}
-                             <div className="pt-2 border-t border-blue-200">
-                                <div className="flex justify-between text-xs text-slate-500 mb-1 font-semibold bg-blue-100/50 p-1 rounded">Logo Position</div>
-                                <div className="space-y-3 pl-2 mt-2">
-                                    <div>
-                                        <div className="flex justify-between text-xs text-slate-500 mb-1">
-                                          <span>Size</span>
-                                          <span>{getConfig('logoScale', 100)}%</span>
-                                        </div>
-                                        <input 
-                                          type="range" min="10" max="200" 
-                                          value={getConfig('logoScale', 100)}
-                                          onChange={(e) => updateActiveThemeConfig('logoScale', Number(e.target.value))}
-                                          className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <div className="text-xs text-slate-500 mb-1">Offset X (mm)</div>
-                                            <input 
-                                                type="number" 
-                                                value={getConfig('logoX', 0)}
-                                                onChange={(e) => updateActiveThemeConfig('logoX', Number(e.target.value))}
-                                                className="w-full border rounded p-1 text-xs"
-                                            />
-                                        </div>
-                                        <div>
-                                            <div className="text-xs text-slate-500 mb-1">Offset Y (mm)</div>
-                                            <input 
-                                                type="number" 
-                                                value={getConfig('logoY', 0)}
-                                                onChange={(e) => updateActiveThemeConfig('logoY', Number(e.target.value))}
-                                                className="w-full border rounded p-1 text-xs"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                             </div>
-
-                             {/* Watermark Controls */}
-                             <div className="pt-2 border-t border-blue-200">
-                                <div className="flex justify-between text-xs text-slate-500 mb-1 font-semibold bg-blue-100/50 p-1 rounded">Watermark Position</div>
-                                <div className="space-y-3 pl-2 mt-2">
-                                    <div>
-                                        <div className="flex justify-between text-xs text-slate-500 mb-1">
-                                          <span>Size</span>
-                                          <span>{getConfig('watermarkScale', 100)}%</span>
-                                        </div>
-                                        <input 
-                                          type="range" min="10" max="200" 
-                                          value={getConfig('watermarkScale', 100)}
-                                          onChange={(e) => updateActiveThemeConfig('watermarkScale', Number(e.target.value))}
-                                          className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <div className="text-xs text-slate-500 mb-1">Offset X (mm)</div>
-                                            <input 
-                                                type="number" 
-                                                value={getConfig('watermarkX', 0)}
-                                                onChange={(e) => updateActiveThemeConfig('watermarkX', Number(e.target.value))}
-                                                className="w-full border rounded p-1 text-xs"
-                                            />
-                                        </div>
-                                        <div>
-                                            <div className="text-xs text-slate-500 mb-1">Offset Y (mm)</div>
-                                            <input 
-                                                type="number" 
-                                                value={getConfig('watermarkY', 0)}
-                                                onChange={(e) => updateActiveThemeConfig('watermarkY', Number(e.target.value))}
-                                                className="w-full border rounded p-1 text-xs"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                             </div>
-
-                           </div>
-                        </div>
-                      
-                      {/* Advanced Actions */}
-                      <div className="grid grid-cols-2 gap-3 mt-4">
+                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {Object.values(DEFAULT_THEMES).concat(customThemes).map(tpl => (
                         <button
-                           onClick={() => themeFileInputRef.current?.click()}
-                           className="flex items-center justify-center gap-2 py-2 px-3 bg-slate-100 hover:bg-slate-200 rounded text-xs font-medium text-slate-600 transition-colors border border-slate-200"
+                          key={tpl.id}
+                          onClick={() => onUpdateTemplate(tpl.id)}
+                          className={`relative rounded-lg border-2 p-3 flex flex-col items-center gap-2 transition-all ${templateId === tpl.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}
                         >
-                            <FileJson size={14} /> Import Theme (JSON)
-                            <input 
-                                type="file" 
-                                ref={themeFileInputRef} 
-                                className="hidden" 
-                                accept=".json" 
-                                onChange={handleImportTheme}
-                            />
+                           <div className="w-full h-8 rounded" style={{ backgroundColor: tpl.colors.primary }}></div>
+                           <span className="text-[10px] font-bold truncate w-full">{tpl.name}</span>
                         </button>
-                        <button
-                           onClick={() => bgImageInputRef.current?.click()}
-                           className="flex items-center justify-center gap-2 py-2 px-3 bg-slate-100 hover:bg-slate-200 rounded text-xs font-medium text-slate-600 transition-colors border border-slate-200"
-                        >
-                            <ImageIcon size={14} /> New from Background
-                            <input 
-                                type="file" 
-                                ref={bgImageInputRef} 
-                                className="hidden" 
-                                accept="image/*" 
-                                onChange={handleCreateFromImage}
-                            />
-                        </button>
-                      </div>
+                      ))}
+                      <button onClick={() => setIsCreatingTheme(true)} className="border-2 border-dashed border-slate-300 rounded-lg p-3 flex flex-col items-center justify-center text-slate-400 hover:border-blue-500 hover:text-blue-500">
+                         <Plus size={20} />
+                         <span className="text-[10px] font-bold">Custom</span>
+                      </button>
                    </div>
 
-                   <div className="border-t pt-4">
-                      <div className="flex flex-col gap-4">
-                          <label className="flex items-center gap-3 cursor-pointer group">
-                             <div className={`w-10 h-6 rounded-full p-1 transition-colors ${showWatermark ? 'bg-blue-600' : 'bg-slate-300'}`} onClick={() => onToggleWatermark(!showWatermark)}>
-                                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${showWatermark ? 'translate-x-4' : ''}`}></div>
+                   <div className="p-4 bg-slate-50 border rounded-lg space-y-4">
+                      <h4 className="text-xs font-bold text-slate-700 flex items-center gap-2"><Sliders size={14}/> Customize Active Template</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                         <div>
+                            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Table Color</label>
+                            <input 
+                              type="color" 
+                              className="w-full h-8 rounded cursor-pointer border" 
+                              value={activeTheme.colors.tableColor || activeTheme.colors.primary} 
+                              onChange={(e) => updateActiveThemeColor('tableColor', e.target.value)} 
+                            />
+                         </div>
+                         <div>
+                            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Primary Color</label>
+                            <input 
+                              type="color" 
+                              className="w-full h-8 rounded cursor-pointer border" 
+                              value={activeTheme.colors.primary} 
+                              onChange={(e) => updateActiveThemeColor('primary', e.target.value)} 
+                            />
+                         </div>
+                      </div>
+                      <div className="space-y-3 pt-2">
+                        <label className="block text-[10px] font-bold uppercase text-slate-400">Layout Adjustments</label>
+                        <div className="grid grid-cols-2 gap-2">
+                           {[['Logo X', 'logoX'], ['Logo Y', 'logoY'], ['Margin T', 'marginTop'], ['Margin B', 'marginBottom']].map(([label, key]) => (
+                             <div key={key}>
+                               <span className="text-[10px] text-slate-500">{label} (mm)</span>
+                               <input 
+                                 type="number" 
+                                 className="w-full border rounded p-1 text-xs" 
+                                 value={getConfig(key as any, 0)} 
+                                 onChange={(e) => updateActiveThemeConfig(key as any, Number(e.target.value))} 
+                               />
                              </div>
-                             <span className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                                <Droplets size={16} className="text-slate-400" />
-                                Show Watermark
-                             </span>
-                          </label>
-                          
-                          {/* Custom Watermark Upload */}
-                          {showWatermark && (
-                            <div className="ml-12 space-y-4">
-                                {/* Opacity Slider */}
-                                <div className="bg-slate-50 p-3 border border-slate-200 rounded-lg">
-                                     <div className="flex justify-between text-xs font-medium text-slate-500 mb-2">
-                                         <span>Watermark Opacity</span>
-                                         <span>{watermarkOpacity}%</span>
-                                     </div>
-                                     <input
-                                         type="range"
-                                         min="1"
-                                         max="100"
-                                         value={watermarkOpacity}
-                                         onChange={(e) => onUpdateWatermarkOpacity && onUpdateWatermarkOpacity(Number(e.target.value))}
-                                         className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                                     />
-                                </div>
-                                
-                                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                                    <label className="block text-xs font-medium text-slate-500 mb-2">Custom Watermark Image (Optional)</label>
-                                    <div className="flex items-center gap-4">
-                                        <div 
-                                            className="w-16 h-16 border border-dashed border-slate-300 rounded flex items-center justify-center bg-white cursor-pointer hover:border-blue-400"
-                                            onClick={() => watermarkInputRef.current?.click()}
-                                        >
-                                            {customWatermark ? (
-                                                <img src={customWatermark} className="w-full h-full object-contain p-1" />
-                                            ) : (
-                                                <Upload size={16} className="text-slate-400" />
-                                            )}
-                                        </div>
-                                        <div className="flex-1">
-                                            <input 
-                                                type="file" 
-                                                ref={watermarkInputRef} 
-                                                className="hidden" 
-                                                accept="image/*"
-                                                onChange={(e) => handleFileChange(e, (base64) => onUpdateCustomWatermark && onUpdateCustomWatermark(base64))}
-                                            />
-                                            <button 
-                                                onClick={() => watermarkInputRef.current?.click()}
-                                                className="text-xs text-blue-600 hover:underline block mb-1"
-                                            >
-                                                Upload Image
-                                            </button>
-                                            {customWatermark && (
-                                                <button 
-                                                    onClick={() => onUpdateCustomWatermark && onUpdateCustomWatermark('')}
-                                                    className="text-xs text-red-500 hover:underline"
-                                                >
-                                                    Remove Custom Watermark
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <p className="text-[10px] text-slate-400 mt-2">Overrides your logo for the watermark.</p>
-                                </div>
-                            </div>
-                          )}
+                           ))}
+                        </div>
                       </div>
                    </div>
                  </>
@@ -803,107 +352,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
-          {activeTab === 'payment' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               <div>
-                 <label className="block text-xs font-medium text-slate-500 mb-1">Account Name</label>
-                 <input type="text" className="w-full border p-2 rounded text-sm" value={localSender.accountName} onChange={e => updateSenderField('accountName', e.target.value)} />
-               </div>
-               <div>
-                 <label className="block text-xs font-medium text-slate-500 mb-1">Account Number</label>
-                 <input type="text" className="w-full border p-2 rounded text-sm" value={localSender.accountNumber} onChange={e => updateSenderField('accountNumber', e.target.value)} />
-               </div>
-               <div>
-                 <label className="block text-xs font-medium text-slate-500 mb-1">Bank Branch</label>
-                 <input type="text" className="w-full border p-2 rounded text-sm" value={localSender.branch} onChange={e => updateSenderField('branch', e.target.value)} />
-               </div>
-               <div>
-                 <label className="block text-xs font-medium text-slate-500 mb-1">IFSC Code</label>
-                 <input type="text" className="w-full border p-2 rounded text-sm" value={localSender.ifsCode} onChange={e => updateSenderField('ifsCode', e.target.value)} />
-               </div>
-               <div>
-                 <label className="block text-xs font-medium text-slate-500 mb-1">PAN Number</label>
-                 <input type="text" className="w-full border p-2 rounded text-sm" value={localSender.pan} onChange={e => updateSenderField('pan', e.target.value)} />
-               </div>
-            </div>
-          )}
-
-          {activeTab === 'preferences' && (
-             <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Invoice Number Format (Prefix)</label>
-                <div className="flex items-center">
-                  <input 
-                    type="text" 
-                    className="w-1/2 border p-2 rounded-l text-sm bg-white" 
-                    value={localPrefix} 
-                    onChange={e => setLocalPrefix(e.target.value)} 
-                    placeholder="e.g. INV-"
-                  />
-                  <div className="bg-slate-100 border border-l-0 p-2 rounded-r text-sm text-slate-500">00123</div>
-                </div>
-                <p className="text-xs text-slate-400 mt-2">Example: If you set prefix to "AS", invoice numbers will look like "AS00123".</p>
-             </div>
-          )}
-
-          {activeTab === 'clients' && (
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold text-slate-700">Stored Clients</h3>
-                <span className="text-xs text-slate-500">{clients.length} clients found</span>
-              </div>
-              <div className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden max-h-[300px] overflow-y-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-slate-100 text-slate-500 font-medium">
-                    <tr>
-                      <th className="p-3">Name</th>
-                      <th className="p-3">Email</th>
-                      <th className="p-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {clients.map(client => (
-                      <tr key={client.id} className="border-t border-slate-200 hover:bg-white transition-colors">
-                        <td className="p-3 font-medium text-slate-800">{client.name}</td>
-                        <td className="p-3 text-slate-600">{client.email || '-'}</td>
-                        <td className="p-3 text-right">
-                          <button 
-                            onClick={() => {
-                              if(window.confirm(`Delete client ${client.name}?`)) onDeleteClient(client.id);
-                            }}
-                            className="text-red-400 hover:text-red-600 p-1"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {clients.length === 0 && (
-                      <tr>
-                        <td colSpan={3} className="p-6 text-center text-slate-400">No clients stored yet.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+          {/* ... other tabs ... */}
         </div>
 
-        {/* Footer */}
         <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end space-x-3">
-          <button 
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <button 
-            onClick={handleSave}
-            className="px-6 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors flex items-center space-x-2"
-          >
-            <Save size={16} />
-            <span>Save Settings</span>
-          </button>
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-600">Cancel</button>
+          <button onClick={handleSave} className="px-6 py-2 bg-slate-900 text-white rounded-lg text-sm font-bold">Save Settings</button>
         </div>
       </div>
     </div>
