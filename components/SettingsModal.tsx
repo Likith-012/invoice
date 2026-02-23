@@ -59,9 +59,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [localSender, setLocalSender] = useState<SenderDetails>(senderDetails);
   const [localPrefix, setLocalPrefix] = useState(invoicePrefix);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Fix: Added missing watermarkInputRef to handle custom watermark image uploads
   const watermarkInputRef = useRef<HTMLInputElement>(null);
-  const themeFileInputRef = useRef<HTMLInputElement>(null);
-  const bgImageInputRef = useRef<HTMLInputElement>(null);
 
   const [isCreatingTheme, setIsCreatingTheme] = useState(false);
   const [newTheme, setNewTheme] = useState<Partial<InvoiceTheme>>({
@@ -128,23 +127,32 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     onUpdateTemplate(themeToSave.id);
   };
 
-  const handleCloneTheme = () => {
-    if (!onAddTheme) return;
-    const standardTheme = DEFAULT_THEMES[templateId];
-    if (!standardTheme) return;
-
-    const clonedTheme: InvoiceTheme = {
-      ...JSON.parse(JSON.stringify(standardTheme)),
-      id: `custom-${uuidv4()}`,
-      name: `${standardTheme.name} (Custom)`,
-      isCustom: true,
-      colors: {
-          ...standardTheme.colors,
-          tableColor: standardTheme.colors.tableColor || standardTheme.colors.primary
-      }
-    };
-    onAddTheme(clonedTheme);
-    onUpdateTemplate(clonedTheme.id);
+  const updateActiveThemeColor = (key: keyof InvoiceTheme['colors'], value: string) => {
+    if (activeCustomTheme && onUpdateCustomThemeDetails) {
+        onUpdateCustomThemeDetails({
+            ...activeCustomTheme,
+            colors: {
+                ...activeCustomTheme.colors,
+                [key]: value
+            }
+        });
+    } else if (!activeCustomTheme && onAddTheme && onUpdateTemplate) {
+        const standardTheme = DEFAULT_THEMES[templateId];
+        if (standardTheme) {
+            const newThemeId = `custom-${uuidv4()}`;
+            onAddTheme({
+                ...JSON.parse(JSON.stringify(standardTheme)),
+                id: newThemeId,
+                name: `${standardTheme.name} (Custom)`,
+                isCustom: true,
+                colors: {
+                    ...standardTheme.colors,
+                    [key]: value
+                }
+            });
+            onUpdateTemplate(newThemeId);
+        }
+    }
   };
 
   const updateActiveThemeConfig = (key: keyof NonNullable<InvoiceTheme['customConfig']>, value: number) => {
@@ -167,34 +175,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 isCustom: true,
                 customConfig: {
                     ...standardTheme.customConfig,
-                    [key]: value
-                }
-            });
-            onUpdateTemplate(newThemeId);
-        }
-    }
-  };
-
-  const updateActiveThemeColor = (key: keyof InvoiceTheme['colors'], value: string) => {
-    if (activeCustomTheme && onUpdateCustomThemeDetails) {
-        onUpdateCustomThemeDetails({
-            ...activeCustomTheme,
-            colors: {
-                ...activeCustomTheme.colors,
-                [key]: value
-            }
-        });
-    } else if (!activeCustomTheme && onAddTheme && onUpdateTemplate) {
-        const standardTheme = DEFAULT_THEMES[templateId];
-        if (standardTheme) {
-            const newThemeId = `custom-${uuidv4()}`;
-            onAddTheme({
-                ...JSON.parse(JSON.stringify(standardTheme)),
-                id: newThemeId,
-                name: `${standardTheme.name} (Custom)`,
-                isCustom: true,
-                colors: {
-                    ...standardTheme.colors,
                     [key]: value
                 }
             });
@@ -352,7 +332,114 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
-          {/* ... other tabs ... */}
+          {activeTab === 'payment' && (
+            <div className="space-y-6">
+               <div className="bg-slate-900 text-white p-6 rounded-xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16"></div>
+                  <h3 className="font-bold text-lg mb-2 flex items-center gap-2"><CreditCard size={20} className="text-blue-400" /> Banking Details</h3>
+                  <div className="space-y-4 relative z-10">
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-full">
+                           <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Account Holder Name</label>
+                           <input type="text" className="w-full bg-slate-800 border-none rounded p-2 text-sm text-white" value={localSender.accountName} onChange={e => updateSenderField('accountName', e.target.value)} />
+                        </div>
+                        <div className="col-span-full">
+                           <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Account Number</label>
+                           <input type="text" className="w-full bg-slate-800 border-none rounded p-2 text-sm text-white" value={localSender.accountNumber} onChange={e => updateSenderField('accountNumber', e.target.value)} />
+                        </div>
+                        <div>
+                           <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">IFS Code</label>
+                           <input type="text" className="w-full bg-slate-800 border-none rounded p-2 text-sm text-white" value={localSender.ifsCode} onChange={e => updateSenderField('ifsCode', e.target.value)} />
+                        </div>
+                        <div>
+                           <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">PAN Number</label>
+                           <input type="text" className="w-full bg-slate-800 border-none rounded p-2 text-sm text-white" value={localSender.pan} onChange={e => updateSenderField('pan', e.target.value)} />
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+          )}
+
+          {activeTab === 'preferences' && (
+             <div className="space-y-6">
+                <div>
+                   <label className="block text-xs font-medium text-slate-500 mb-2">Invoice Prefix</label>
+                   <input 
+                      type="text" 
+                      className="w-full border p-2 rounded text-sm uppercase" 
+                      value={localPrefix} 
+                      onChange={e => setLocalPrefix(e.target.value)} 
+                   />
+                </div>
+                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border">
+                   <div>
+                      <h4 className="text-sm font-bold text-slate-800">Background Watermark</h4>
+                      <p className="text-xs text-slate-500">Show a faint logo behind the invoice content</p>
+                   </div>
+                   <button 
+                     onClick={() => onToggleWatermark(!showWatermark)}
+                     className={`w-12 h-6 rounded-full transition-colors relative ${showWatermark ? 'bg-blue-600' : 'bg-slate-300'}`}
+                   >
+                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${showWatermark ? 'translate-x-7' : 'translate-x-1'}`}></div>
+                   </button>
+                </div>
+
+                {showWatermark && (
+                   <div className="space-y-4 p-4 border rounded-lg bg-white">
+                      <label className="block text-xs font-medium text-slate-500">Watermark Opacity ({watermarkOpacity}%)</label>
+                      <input 
+                        type="range" 
+                        min="5" max="30" step="1" 
+                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        value={watermarkOpacity}
+                        onChange={(e) => onUpdateWatermarkOpacity?.(parseInt(e.target.value))}
+                      />
+                      <div className="flex items-center gap-4">
+                         <div className="flex-1">
+                            <label className="block text-xs font-medium text-slate-500 mb-2">Custom Watermark Image</label>
+                            <button 
+                               onClick={() => watermarkInputRef.current?.click()}
+                               className="w-full py-2 border border-dashed border-slate-300 rounded text-xs text-slate-500 hover:bg-slate-50"
+                            >
+                               {customWatermark ? 'Change Image' : 'Upload Image'}
+                            </button>
+                            <input type="file" ref={watermarkInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, onUpdateCustomWatermark || (()=>{}))} />
+                         </div>
+                         {customWatermark && (
+                            <button onClick={() => onUpdateCustomWatermark?.('')} className="text-red-500 p-2"><Trash2 size={16}/></button>
+                         )}
+                      </div>
+                   </div>
+                )}
+             </div>
+          )}
+
+          {activeTab === 'clients' && (
+             <div className="space-y-4">
+                <div className="flex justify-between items-center mb-2">
+                   <h3 className="text-sm font-bold text-slate-800">Saved Clients</h3>
+                   <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{clients.length} Total</span>
+                </div>
+                {clients.length === 0 ? (
+                   <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed">
+                      <p className="text-xs text-slate-400">No clients saved yet.</p>
+                   </div>
+                ) : (
+                   <div className="space-y-2">
+                      {clients.map(client => (
+                        <div key={client.id} className="flex items-center justify-between p-3 bg-white border rounded-lg hover:shadow-sm transition-shadow">
+                           <div className="flex-1 min-w-0 pr-4">
+                              <h4 className="text-sm font-bold text-slate-700 truncate">{client.name}</h4>
+                              <p className="text-[10px] text-slate-400 truncate">{client.email}</p>
+                           </div>
+                           <button onClick={() => onDeleteClient(client.id)} className="text-slate-300 hover:text-red-500 p-2"><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                   </div>
+                )}
+             </div>
+          )}
         </div>
 
         <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end space-x-3">

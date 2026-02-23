@@ -29,6 +29,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   });
 
   const theme = allThemes[templateId] || DEFAULT_THEMES['classic-blue'];
+  // Fallback to primary color if tableColor is not defined
   const tableColor = theme.colors.tableColor || theme.colors.primary;
   
   const bgOpacity = theme.customConfig?.backgroundOpacity !== undefined ? theme.customConfig.backgroundOpacity / 100 : 1;
@@ -81,7 +82,8 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         style={{ height: '70px', width: 'auto', objectFit: 'contain' }}
         onError={(e) => {
            e.currentTarget.style.display = 'none';
-           document.getElementById(`fallback-${templateId}`)?.classList.remove('hidden');
+           const fallback = document.getElementById(`fallback-${templateId}`);
+           if (fallback) fallback.classList.remove('hidden');
         }}
       />
       <div id={`fallback-${templateId}`} className="hidden font-bold text-2xl tracking-tighter border-2 border-current px-2 py-1 inline-block" style={{ color: theme.colors.primary }}>
@@ -131,11 +133,13 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
 
   const ReferenceTable = () => (
     <div className="relative z-10 w-full mb-4">
+      {/* Explicitly set header background and text color */}
       <div className="flex w-full" style={{ backgroundColor: tableColor, color: '#ffffff' }}>
           <div className="py-2.5 px-4 text-left w-[15%] font-serif font-bold uppercase tracking-widest text-[10px]">Item</div>
           <div className="py-2.5 px-4 text-left w-[60%] font-serif font-bold uppercase tracking-widest text-[10px]">Description</div>
           <div className="py-2.5 px-4 text-right w-[25%] font-serif font-bold uppercase tracking-widest text-[10px]">Amount</div>
       </div>
+      {/* Explicitly set borders using tableColor */}
       <div style={{ borderLeft: `2px solid ${tableColor}`, borderRight: `2px solid ${tableColor}`, borderBottom: `2px solid ${tableColor}`, backgroundColor: 'rgba(255, 255, 255, 0.5)' }} className="relative">
           {items.map((item, index) => (
             <div key={item.id} className="flex w-full" style={{ borderBottom: index === items.length - 1 ? 'none' : '1px solid #94a3b8' }}>
@@ -209,14 +213,15 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                              </div>
                          </div>
                          <div className="w-[40%]">
+                             {/* Footer total box with dynamic tableColor */}
                              <div style={{ border: `2px solid ${tableColor}`, backgroundColor: '#ffffff' }}>
                                  <div className="flex justify-between p-2 text-slate-800 font-bold text-xs">
                                      <span>Sub Total:</span>
-                                     <span>{currencyFormatter.format(subtotal)}</span>
+                                     <span>{currencyFormatter.format(subtotal).replace('₹', '₹ ')}</span>
                                  </div>
                                  <div className="p-2 text-white font-bold text-base flex justify-between items-center" style={{ backgroundColor: tableColor, borderTop: `2px solid ${tableColor}` }}>
                                      <span className="uppercase tracking-widest font-serif text-sm">TOTAL:</span>
-                                     <span>{currencyFormatter.format(total)}</span>
+                                     <span>{currencyFormatter.format(total).replace('₹', '₹ ')}/-</span>
                                  </div>
                              </div>
                          </div>
@@ -228,6 +233,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
       );
   }
 
+  // Sidebar/Minimalist fallback
   return (
     <div className={containerClass} style={{ backgroundColor: '#ffffff' }}>
         <div className="p-12 flex flex-col h-full relative z-10">

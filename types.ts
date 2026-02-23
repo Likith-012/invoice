@@ -62,7 +62,7 @@ export interface InvoiceTheme {
     accent: string;
     text: string;
     bg: string;
-    tableColor?: string; // New: Custom color for tables
+    tableColor?: string; // NEW: Custom color for the items table
     headerText?: string;
     sidebarBg?: string;
     sidebarText?: string;

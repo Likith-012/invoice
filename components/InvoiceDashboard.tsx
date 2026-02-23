@@ -110,7 +110,8 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
     saveToHistory(invoiceData);
     setIsExporting(true);
     
-    // Increased timeout to ensure all images and fonts in the invisible root are loaded
+    // Crucial: Give images/fonts time to render in the hidden export root
+    // We use a longer delay to be safe on slower devices.
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     const element = exportRef.current;
@@ -127,16 +128,19 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
         return;
     }
 
+    // Force A4 dimensions in pixels (794x1123 is standard A4 at 96 DPI)
+    // windowWidth forces the media queries to treat it as a full-size desktop screen
+    // scale: 3 ensures high definition for text and graphics
     const opt = {
         margin: 0,
         filename: `${invoiceData.invoiceNumber || 'invoice'}.pdf`,
         image: { type: 'jpeg', quality: 1.0 },
         html2canvas: { 
-            scale: 3, // High scale for crisp text
+            scale: 3, 
             useCORS: true, 
             logging: false,
             letterRendering: true,
-            // Force capture at A4 dimensions in pixels (approx 794px wide)
+            windowWidth: 794,
             width: 794,
             height: 1123,
             backgroundColor: '#ffffff'
@@ -187,6 +191,7 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
       <HistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} history={history} onLoad={setInvoiceData} onDelete={(id) => setHistory(h => h.filter(x => x.id !== id))} />
 
       <div className="min-h-screen flex flex-col md:flex-row font-sans print:hidden">
+        {/* Editor Panel */}
         <div className={`w-full md:w-5/12 lg:w-4/12 bg-white border-r border-slate-200 h-[calc(100vh-60px)] md:h-screen overflow-y-auto ${activeTab === 'preview' ? 'hidden md:block' : ''}`}>
           <div className="p-6">
             <div className="flex justify-between items-center mb-8">
@@ -207,7 +212,7 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
               <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Items</h2>
               <SmartInput onItemsParsed={(items) => setInvoiceData(prev => ({ ...prev, items: [...prev.items, ...items] }))} />
               <div className="space-y-4">
-                {invoiceData.items.map((item, index) => (
+                {invoiceData.items.map((item) => (
                   <div key={item.id} className="bg-slate-50 p-4 rounded-lg border relative group">
                     <button onClick={() => removeItem(item.id)} className="absolute right-2 top-2 text-slate-400 hover:text-red-500"><Trash2 size={16} /></button>
                     <input type="text" value={item.description} onChange={(e) => updateItem(item.id, 'description', e.target.value)} className="w-full bg-white border p-2 rounded text-sm mb-3" placeholder="Description" />
@@ -223,6 +228,7 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
           </div>
         </div>
 
+        {/* Preview Panel */}
         <div className={`w-full md:w-7/12 lg:w-8/12 bg-slate-100 h-[calc(100vh-60px)] md:h-screen overflow-y-auto relative ${activeTab === 'edit' ? 'hidden md:block' : ''}`}>
           <div className="sticky top-0 z-10 p-4 flex justify-end gap-3 pointer-events-none">
              <div className="pointer-events-auto flex gap-3">
@@ -241,9 +247,10 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
         </div>
       </div>
 
-      {/* FIXED EXPORT ROOT: Use visibility hidden instead of negative positioning for better rendering stability */}
+      {/* FIXED EXPORT ROOT: Use visibility hidden so it still renders correctly for snapshotting */}
+      {/* We set absolute sizing (794px) to exactly match A4 at standard capture density */}
       <div style={{ position: 'fixed', top: 0, left: 0, width: '210mm', pointerEvents: 'none', zIndex: -100, visibility: 'hidden' }}>
-        <div ref={exportRef} style={{ width: '210mm', height: '297mm', backgroundColor: '#ffffff' }}>
+        <div ref={exportRef} style={{ width: '794px', height: '1123px', backgroundColor: '#ffffff', overflow: 'hidden' }}>
             <InvoicePreview data={invoiceData} logoSrc={customLogo} templateId={templateId} showWatermark={showWatermark} customThemes={customThemes} customWatermark={customWatermark} watermarkOpacity={watermarkOpacity} />
         </div>
       </div>
