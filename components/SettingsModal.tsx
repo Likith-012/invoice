@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { SenderDetails, Client, InvoiceTheme, DEFAULT_THEMES } from '../types';
-import { X, Upload, Save, Trash2, User, CreditCard, Building, Settings as SettingsIcon, LayoutTemplate, Droplets, Plus, Palette, FileJson, Image as ImageIcon, Download, Sliders, Copy } from 'lucide-react';
+import { X, Upload, Save, Trash2, User, CreditCard, Building, Settings as SettingsIcon, LayoutTemplate, Droplets, Plus, Palette, FileJson, Image as ImageIcon, Download, Sliders, Copy, Monitor } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface SettingsModalProps {
@@ -59,8 +59,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [localSender, setLocalSender] = useState<SenderDetails>(senderDetails);
   const [localPrefix, setLocalPrefix] = useState(invoicePrefix);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // Fix: Added missing watermarkInputRef to handle custom watermark image uploads
   const watermarkInputRef = useRef<HTMLInputElement>(null);
+  const backgroundInputRef = useRef<HTMLInputElement>(null);
 
   const [isCreatingTheme, setIsCreatingTheme] = useState(false);
   const [newTheme, setNewTheme] = useState<Partial<InvoiceTheme>>({
@@ -71,7 +71,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   });
 
   const activeCustomTheme = customThemes.find(t => t.id === templateId);
-  const activeTheme = activeCustomTheme || DEFAULT_THEMES[templateId];
+  const activeTheme = activeCustomTheme || DEFAULT_THEMES[templateId] || DEFAULT_THEMES['classic-blue'];
 
   const getConfig = (key: keyof NonNullable<InvoiceTheme['customConfig']>, def: number) => {
     return activeTheme?.customConfig?.[key] ?? def;
@@ -98,6 +98,29 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const updateSenderField = (field: keyof SenderDetails, value: string) => {
     setLocalSender(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleQuickBackgroundUpload = (base64: string) => {
+    if (!onAddTheme || !onUpdateTemplate) return;
+    
+    const themeToSave: InvoiceTheme = {
+        id: `custom-${uuidv4()}`,
+        name: 'Device Template',
+        layout: 'standard',
+        font: 'sans',
+        colors: {
+            primary: '#3b82f6',
+            accent: '#fbbf24',
+            text: '#1f2937',
+            bg: 'white',
+            tableColor: '#3b82f6'
+        },
+        isCustom: true,
+        backgroundImage: base64
+    };
+    
+    onAddTheme(themeToSave);
+    onUpdateTemplate(themeToSave.id);
   };
 
   const handleSaveTheme = () => {
@@ -255,6 +278,24 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                        />
                        <div className="grid grid-cols-2 gap-4">
                           <div>
+                             <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Layout</label>
+                             <select className="w-full border p-2 rounded text-sm" value={newTheme.layout} onChange={(e) => setNewTheme(prev => ({...prev, layout: e.target.value as any}))}>
+                                <option value="standard">Standard</option>
+                                <option value="sidebar">Sidebar</option>
+                                <option value="minimal">Minimal</option>
+                             </select>
+                          </div>
+                          <div>
+                             <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Font</label>
+                             <select className="w-full border p-2 rounded text-sm" value={newTheme.font} onChange={(e) => setNewTheme(prev => ({...prev, font: e.target.value as any}))}>
+                                <option value="sans">Sans Serif</option>
+                                <option value="serif">Serif</option>
+                                <option value="mono">Monospace</option>
+                             </select>
+                          </div>
+                       </div>
+                       <div className="grid grid-cols-2 gap-4">
+                          <div>
                              <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Primary Color</label>
                              <input type="color" className="w-full h-10 rounded cursor-pointer border" value={newTheme.colors?.primary} onChange={(e) => setNewTheme(prev => ({...prev, colors: {...prev.colors!, primary: e.target.value}}))} />
                           </div>
@@ -273,23 +314,55 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                  <>
                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {Object.values(DEFAULT_THEMES).concat(customThemes).map(tpl => (
-                        <button
-                          key={tpl.id}
-                          onClick={() => onUpdateTemplate(tpl.id)}
-                          className={`relative rounded-lg border-2 p-3 flex flex-col items-center gap-2 transition-all ${templateId === tpl.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}
-                        >
-                           <div className="w-full h-8 rounded" style={{ backgroundColor: tpl.colors.primary }}></div>
-                           <span className="text-[10px] font-bold truncate w-full">{tpl.name}</span>
-                        </button>
+                        <div key={tpl.id} className="relative group">
+                          <button
+                            onClick={() => onUpdateTemplate(tpl.id)}
+                            className={`w-full relative rounded-lg border-2 p-3 flex flex-col items-center gap-2 transition-all ${templateId === tpl.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}
+                          >
+                             <div className="w-full h-8 rounded" style={{ backgroundColor: tpl.colors.primary }}></div>
+                             <span className="text-[10px] font-bold truncate w-full">{tpl.name}</span>
+                          </button>
+                          {tpl.isCustom && (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); onDeleteTheme?.(tpl.id); }}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                            >
+                              <Trash2 size={10} />
+                            </button>
+                          )}
+                        </div>
                       ))}
                       <button onClick={() => setIsCreatingTheme(true)} className="border-2 border-dashed border-slate-300 rounded-lg p-3 flex flex-col items-center justify-center text-slate-400 hover:border-blue-500 hover:text-blue-500">
                          <Plus size={20} />
                          <span className="text-[10px] font-bold">Custom</span>
                       </button>
+                      <button 
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = (e: any) => handleFileChange(e, handleQuickBackgroundUpload);
+                          input.click();
+                        }} 
+                        className="border-2 border-dashed border-slate-300 rounded-lg p-3 flex flex-col items-center justify-center text-slate-400 hover:border-blue-500 hover:text-blue-500"
+                      >
+                         <Monitor size={20} />
+                         <span className="text-[10px] font-bold text-center">Upload from Device</span>
+                      </button>
                    </div>
 
                    <div className="p-4 bg-slate-50 border rounded-lg space-y-4">
-                      <h4 className="text-xs font-bold text-slate-700 flex items-center gap-2"><Sliders size={14}/> Customize Active Template</h4>
+                      <div className="flex justify-between items-center">
+                         <h4 className="text-xs font-bold text-slate-700 flex items-center gap-2"><Sliders size={14}/> Customize Active Template</h4>
+                         {activeCustomTheme && (
+                           <button 
+                             onClick={() => onUpdateCustomThemeDetails?.({...activeCustomTheme, customConfig: {}})}
+                             className="text-[10px] font-bold text-slate-400 hover:text-red-500 flex items-center gap-1"
+                           >
+                             Reset
+                           </button>
+                         )}
+                      </div>
                       <div className="grid grid-cols-2 gap-4">
                          <div>
                             <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Table Color</label>
@@ -310,16 +383,34 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             />
                          </div>
                       </div>
-                      <div className="space-y-3 pt-2">
-                        <label className="block text-[10px] font-bold uppercase text-slate-400">Layout Adjustments</label>
-                        <div className="grid grid-cols-2 gap-2">
-                           {[['Logo X', 'logoX'], ['Logo Y', 'logoY'], ['Margin T', 'marginTop'], ['Margin B', 'marginBottom']].map(([label, key]) => (
+                       <div className="space-y-3 pt-2">
+                        <div className="flex justify-between items-center">
+                          <label className="block text-[10px] font-bold uppercase text-slate-400">Layout Adjustments</label>
+                          {activeCustomTheme && (
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => backgroundInputRef.current?.click()}
+                                className="text-[10px] font-bold text-blue-600 hover:underline flex items-center gap-1"
+                              >
+                                <ImageIcon size={10} /> Change BG
+                              </button>
+                              <input type="file" ref={backgroundInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, (base64) => onUpdateCustomThemeDetails?.({...activeCustomTheme, backgroundImage: base64}))} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                           {[
+                             ['Logo X', 'logoX'], ['Logo Y', 'logoY'], ['Logo Scale', 'logoScale'],
+                             ['Margin T', 'marginTop'], ['Margin B', 'marginBottom'], ['BG Scale', 'backgroundScale'],
+                             ['BG X', 'backgroundPositionX'], ['BG Y', 'backgroundPositionY'], ['BG Opacity', 'backgroundOpacity'],
+                             ['WM Scale', 'watermarkScale'], ['WM X', 'watermarkX'], ['WM Y', 'watermarkY']
+                           ].map(([label, key]) => (
                              <div key={key}>
-                               <span className="text-[10px] text-slate-500">{label} (mm)</span>
+                               <span className="text-[10px] text-slate-500">{label}</span>
                                <input 
                                  type="number" 
                                  className="w-full border rounded p-1 text-xs" 
-                                 value={getConfig(key as any, 0)} 
+                                 value={getConfig(key as any, key.includes('Scale') || key.includes('Opacity') ? 100 : 0)} 
                                  onChange={(e) => updateActiveThemeConfig(key as any, Number(e.target.value))} 
                                />
                              </div>

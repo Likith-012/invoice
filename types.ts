@@ -142,14 +142,14 @@ export const MOCK_CLIENTS: Client[] = [
 ];
 
 export const DEFAULT_SENDER: SenderDetails = {
-  name: "Adversity Solutions",
-  address: "#1492/11 RT STREET , KOTE\nCHANNAPATNA, RAMNAGRA DISTRICT,\nKARNATAKA -562160",
-  accountName: "VIJETH M",
-  accountNumber: "50100562362268",
-  branch: "Vijaynagar ,Mysore",
-  ifsCode: "HDFC0003668",
-  pan: "CQFPV6920D",
-  mobile: "8050187327",
-  website: "www.adversitysolutions.in",
-  email: "billing@adversitysolutions.in"
+  name: "Your Company Name",
+  address: "123 Business Street, City, State, PIN",
+  accountName: "Likith",
+  accountNumber: "121312324235435",
+  branch: "DUMMY BRANCH",
+  ifsCode: "Liki16122002",
+  pan: "charlie1612l",
+  mobile: "+91 98765 43210",
+  website: "www.yourwebsite.com",
+  email: "hello@yourwebsite.com"
 };

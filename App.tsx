@@ -19,12 +19,11 @@ const App: React.FC = () => {
     setLoading(false);
   }, []);
 
-  const handlePaymentSuccess = () => {
-    localStorage.setItem('invoicify_access', 'true');
-    setView('dashboard');
+  const handleLoginSuccess = () => {
+    setView('payment');
   };
 
-  const handleLoginSuccess = () => {
+  const handlePaymentSuccess = () => {
     localStorage.setItem('invoicify_access', 'true');
     setView('dashboard');
   };
@@ -45,6 +44,8 @@ const App: React.FC = () => {
             onLogin={() => setView('login')}
         />
       );
+    case 'payment':
+      return <PaymentPage onPaymentSuccess={handlePaymentSuccess} />;
     case 'login':
       return (
         <LoginPage 
@@ -52,8 +53,6 @@ const App: React.FC = () => {
             onBack={() => setView('landing')}
         />
       );
-    case 'payment':
-      return <PaymentPage onPaymentSuccess={handlePaymentSuccess} />;
     case 'dashboard':
       return <InvoiceDashboard onLogout={handleLogout} />;
     default:

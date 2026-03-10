@@ -208,7 +208,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                              <h3 className="font-serif font-bold uppercase mb-2 text-slate-900 text-[10px] tracking-widest">{isQuotation ? 'Terms & Conditions:' : 'Payment Info:'}</h3>
                              <div className="text-slate-700 font-medium space-y-0.5 text-[9px] leading-tight">
                                 {isQuotation ? <p className="whitespace-pre-line">{data.notes || "1. 50% Advance"}</p> : 
-                                  <>{sender.accountName && <p>Name: {sender.accountName}</p>}{sender.accountNumber && <p>Acc: {sender.accountNumber}</p>}</>
+                                  <>
+                                    {sender.accountName && <p>Name: {sender.accountName}</p>}
+                                    {sender.accountNumber && <p>Acc: {sender.accountNumber}</p>}
+                                    {sender.ifsCode && <p>IFSC: {sender.ifsCode}</p>}
+                                    {sender.pan && <p>PAN: {sender.pan}</p>}
+                                  </>
                                 }
                              </div>
                          </div>

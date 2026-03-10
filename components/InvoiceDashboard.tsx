@@ -39,7 +39,7 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
 
   const [customLogo, setCustomLogo] = useState<string | undefined>(() => localStorage.getItem('invoicify_logo') || undefined);
   const [customWatermark, setCustomWatermark] = useState<string | undefined>(() => localStorage.getItem('invoicify_custom_watermark') || undefined);
-  const [invoicePrefix, setInvoicePrefix] = useState<string>(() => localStorage.getItem('invoicify_prefix') || 'AS');
+  const [invoicePrefix, setInvoicePrefix] = useState<string>(() => localStorage.getItem('invoicify_prefix') || 'INV');
   const [templateId, setTemplateId] = useState<string>(() => localStorage.getItem('invoicify_template') || 'classic-blue');
   const [customThemes, setCustomThemes] = useState<InvoiceTheme[]>(() => {
     try {
@@ -60,6 +60,29 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
           return saved ? JSON.parse(saved) : [];
       } catch { return []; }
   });
+
+  useEffect(() => {
+    // Migration: Update old bank details if they match the previous hardcoded values
+    const savedSender = localStorage.getItem('invoicify_sender');
+    if (savedSender) {
+      try {
+        const parsed = JSON.parse(savedSender);
+        if (parsed.accountName === "VIJETH M" && parsed.accountNumber === "50100562362268") {
+          const updated = {
+            ...parsed,
+            accountName: "Likith",
+            accountNumber: "121312324235435",
+            ifsCode: "Liki16122002",
+            pan: "charlie1612l"
+          };
+          setSenderDetails(updated);
+          localStorage.setItem('invoicify_sender', JSON.stringify(updated));
+        }
+      } catch (e) {
+        console.error("Migration failed", e);
+      }
+    }
+  }, []);
 
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     type: 'invoice',
@@ -204,6 +227,24 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
             </div>
             
             <section className="mb-8">
+              <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Document Type</h2>
+              <div className="flex bg-slate-100 p-1 rounded-lg">
+                <button 
+                  onClick={() => setInvoiceData(prev => ({ ...prev, type: 'invoice' }))}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${invoiceData.type === 'invoice' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Invoice
+                </button>
+                <button 
+                  onClick={() => setInvoiceData(prev => ({ ...prev, type: 'quotation' }))}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${invoiceData.type === 'quotation' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Quotation
+                </button>
+              </div>
+            </section>
+
+            <section className="mb-8">
               <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Bill To</h2>
               <ClientSelector selectedClient={invoiceData.client} onSelectClient={(client) => setInvoiceData(prev => ({ ...prev, client }))} clients={clients} onAddClient={(c) => setClients(prev => [...prev, c])} onUpdateClient={(c) => setClients(prev => prev.map(x => x.id === c.id ? c : x))} />
             </section>
@@ -224,6 +265,16 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onLogout }) => {
                 ))}
               </div>
               <button onClick={addItem} className="mt-4 w-full py-2 border border-dashed border-slate-300 rounded-lg text-slate-500 hover:bg-slate-50 flex items-center justify-center gap-2 text-sm"><Plus size={16} /> Add Item</button>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">{invoiceData.type === 'quotation' ? 'Terms & Conditions' : 'Notes'}</h2>
+              <textarea 
+                value={invoiceData.notes} 
+                onChange={(e) => setInvoiceData(prev => ({ ...prev, notes: e.target.value }))} 
+                className="w-full border p-2 rounded text-sm h-24" 
+                placeholder={invoiceData.type === 'quotation' ? "e.g. 50% Advance, Validity 15 days..." : "e.g. Thank you for your business..."}
+              />
             </section>
           </div>
         </div>
